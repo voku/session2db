@@ -607,7 +607,7 @@ class Zebra_Session
 
         // deletes the current session id from the database
         $qry = $this->link->prepare('DELETE FROM ' . $this->table_name . ' WHERE session_id=?');
-		$qry->execute(array($session_id));
+        $qry->execute(array($session_id));
 
 
         // if anything happened
@@ -633,7 +633,7 @@ class Zebra_Session
 
         // deletes expired sessions from database
         $qry = $this->link->prepare('DELETE FROM ' . $this->table_name . ' WHERE session_expire<?');
-		$qry->execute(array(time()));
+        $qry->execute(array(time()));
 
 
     }
@@ -669,15 +669,15 @@ class Zebra_Session
 
         // try to obtain a lock with the given name and timeout
         $qry = $this->link->prepare('SELECT GET_LOCK(?, ?)');
-		$qry->execute(array($this->session_lock, $this->lock_timeout));
-		$result = $qry->fetchColumn();
+        $qry->execute(array($this->session_lock, $this->lock_timeout));
+        $result = $qry->fetchColumn();
 
         // if there was an error
         // stop execution
         if ($result != 1)
-		{
-			die('Zebra_Session: Could not obtain session lock!');
-		}
+        {
+            die('Zebra_Session: Could not obtain session lock!');
+        }
 
 
         //  reads session data associated with a session id, but only if
@@ -707,7 +707,7 @@ class Zebra_Session
 
 
         $qry = $this->link->prepare('SELECT session_data FROM ' . $this->table_name . ' WHERE session_id=? AND session_expire>? AND hash=? LIMIT 1');
-		$qry->execute(array($session_id, time(), md5($hash)));
+        $qry->execute(array($session_id, time(), md5($hash)));
 
 
         // if anything was found
@@ -767,14 +767,14 @@ class Zebra_Session
 
         ');
 		
-		$params = array(
-			$session_id,
-			md5(($this->lock_to_user_agent && isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '') . ($this->lock_to_ip && isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '') . $this->security_code),
-			$session_data,
-			time() + $this->session_lifetime,
-			$session_data,
-			time() + $this->session_lifetime
-		);
+        $params = array(
+            $session_id,
+            md5(($this->lock_to_user_agent && isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '') . ($this->lock_to_ip && isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '') . $this->security_code),
+            $session_data,
+            time() + $this->session_lifetime,
+            $session_data,
+            time() + $this->session_lifetime
+        );
 
 
         // if anything happened
