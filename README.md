@@ -2,21 +2,21 @@
 
 ##Session2DB
 
-####A drop-in replacement for PHP's default session handler which stores session data in a MySQL database, providing both better performance and better security and protection against session fixation and session hijacking.
+####A drop-in replacement for PHP's default session handler which stores session data in a database, providing both better performance and better security and protection against session fixation and session hijacking.
 
-Zebra_Session implements *session locking* - a way to ensure that data is correctly handled in a scenario with multiple concurrent AJAX requests.
+Session2DB implements *session locking* - a way to ensure that data is correctly handled in a scenario with multiple concurrent AJAX requests.
 
 It is also a solution for applications that are scaled across multiple web servers (using a load balancer or a round-robin DNS) and where the user's session data needs to be available. Storing sessions in a database makes them available to all of the servers!
 
 The library supports "flashdata" - session variable which will only be available for the next server request, and which will be automatically deleted afterwards. Typically used for informational or status messages (for example: "data has been successfully updated").
 
-Zebra_Session is was inspired by John Herren's code from the [Trick out your session handler](http://devzone.zend.com/413/trick-out-your-session-handler/) article and [Chris Shiflett](http://shiflett.org/articles/the-truth-about-sessions)'s articles about PHP sessions.
+Session2DB is was inspired by John Herren's code from the [Trick out your session handler](http://devzone.zend.com/413/trick-out-your-session-handler/) article and [Chris Shiflett](http://shiflett.org/articles/the-truth-about-sessions)'s articles about PHP sessions.
 
 The code is heavily commented and generates no warnings/errors/notices when PHP's error reporting level is set to E_ALL.
 
 ##Features
 
-- acts as a wrapper for PHP’s default session handling functions, but instead of storing session data in flat files it stores them in a MySQL database, providing better security and better performance
+- acts as a wrapper for PHP’s default session handling functions, but instead of storing session data in flat files it stores them in a database, providing better security and better performance
 
 - it is a drop-in and seamingless replacement for PHP’s default session handler: PHP sessions will be used in the same way as prior to using the library; you don’t need to change any existing code!
 
