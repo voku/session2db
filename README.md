@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/voku/Session2DB.svg?branch=master)](https://travis-ci.org/voku/Session2DB)
+
 ##Session2DB
 
 ####A drop-in replacement for PHP's default session handler which stores session data in a MySQL database, providing both better performance and better security and protection against session fixation and session hijacking.
