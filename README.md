@@ -1,4 +1,4 @@
-##Zebra_Session
+##Session2DB
 
 ####A drop-in replacement for PHP's default session handler which stores session data in a MySQL database, providing both better performance and better security and protection against session fixation and session hijacking.
 
@@ -39,15 +39,10 @@ Download the latest version, unpack it, and put it in a place accessible to your
 ```php
 <?php
 
-    // first, connect to a database containing the sessions table
-    // like $link = mysqli_connect(host, username, password, database);
+    // include autoloader
+    require_once 'vendor/autoload.php';
 
-    // include the Zebra_Session class
-    include 'path/to/Zebra_Session.php';
-
-    // instantiate the class
-    // this also calls session_start()
-    $session = new Zebra_Session($link, 'sEcUr1tY_c0dE');
+    $session = new voku/helper/Session2DB($link, 'sEcUr1tY_c0dE');
 
     // from now on, use sessions as you would normally
     // this is why it is called a "drop-in replacement" :)
@@ -57,5 +52,3 @@ Download the latest version, unpack it, and put it in a place accessible to your
 
 ?>
 ```
-
-Visit the **[project's homepage](http://stefangabos.ro/php-libraries/zebra-session/)** for more information.

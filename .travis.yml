@@ -1,0 +1,16 @@
+language: php
+
+php:
+  - 5.3
+  - 5.4
+  - 5.5
+  - 5.6
+
+before_script:
+  - mysql -e 'CREATE DATABASE mysql_test;'
+  - mysql -e 'USE mysql_test; CREATE TABLE session_data ( session_id varchar(32) NOT NULL default "", hash varchar(32) NOT NULL default "", session_data blob NOT NULL, session_expire int(11) NOT NULL default "0", PRIMARY KEY (session_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC;'
+  - composer self-update
+  - composer install --no-interaction --prefer-source --dev
+
+script:
+  - phpunit --coverage-text --verbose
