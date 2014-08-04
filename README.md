@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/voku/Session2DB.svg?branch=master)](https://travis-ci.org/voku/Session2DB)
+[![Build Status](https://travis-ci.org/voku/session2db.svg?branch=master)](https://travis-ci.org/voku/session2db)
 
 ##Session2DB
 
