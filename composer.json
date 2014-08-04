@@ -1,5 +1,5 @@
 {
-  "name": "voku/Session2DB",
+  "name": "voku/session2db",
   "type": "library",
   "description": "A PHP library acting as a wrapper for PHP's default session handling functions which stores data in a MySQL database, providing both better performance and better security and protection against session fixation and session hijacking.",
   "keywords": [
