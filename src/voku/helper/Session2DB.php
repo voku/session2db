@@ -312,37 +312,37 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
       $this->lock_to_ip = $lock_to_ip;
 
       // the table to be used by the class
-      $this->table_name = $table_name;
+      $this->table_name = $this->db->quote_string($table_name);
 
       // the maximum amount of time (in seconds) for which a process can lock the session
       $this->lock_timeout = $lock_timeout;
 
       // register the new handler
       session_set_save_handler(
-          array(
-              &$this,
-              'open'
-          ),
-          array(
-              &$this,
-              'close'
-          ),
-          array(
-              &$this,
-              'read'
-          ),
-          array(
-              &$this,
-              'write'
-          ),
-          array(
-              &$this,
-              'destroy'
-          ),
-          array(
-              &$this,
-              'gc'
-          )
+        array(
+          &$this,
+          'open'
+        ),
+        array(
+          &$this,
+          'close'
+        ),
+        array(
+          &$this,
+          'read'
+        ),
+        array(
+          &$this,
+          'write'
+        ),
+        array(
+          &$this,
+          'destroy'
+        ),
+        array(
+          &$this,
+          'gc'
+        )
       );
 
       // start the session
@@ -368,10 +368,10 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
 
       // handle flashdata after script execution
       register_shutdown_function(
-          array(
-              $this,
-              '_manage_flashdata'
-          )
+        array(
+          $this,
+          '_manage_flashdata'
+        )
       );
 
       // if no DB connections could be found
@@ -408,7 +408,7 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
     $this->gc($this->session_lifetime);
 
     $query = "SELECT COUNT(session_id) as count
-      FROM `" . $this->table_name . "`
+      FROM " . $this->table_name . "
     ";
 
     // counts the rows from the database
@@ -425,10 +425,9 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    *
    * @return int
    */
-  public function gc(/* @noinspection PhpUnusedParameterInspection */
-      $maxlifetime)
+  public function gc(/* @noinspection PhpUnusedParameterInspection */ $maxlifetime)
   {
-    $query = "DELETE FROM `" . $this->table_name . "`
+    $query = "DELETE FROM " . $this->table_name . "
       WHERE session_expire < '" . $this->db->escape(time()) . "'
     ";
 
@@ -477,10 +476,10 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
 
     // return them as an array
     return array(
-        'session.gc_maxlifetime' => $gc_maxlifetime . ' seconds (' . round($gc_maxlifetime / 60) . ' minutes)',
-        'session.gc_probability' => $gc_probability,
-        'session.gc_divisor'     => $gc_divisor,
-        'probability'            => $gc_probability / $gc_divisor * 100 . '%',
+      'session.gc_maxlifetime' => $gc_maxlifetime . ' seconds (' . round($gc_maxlifetime / 60) . ' minutes)',
+      'session.gc_probability' => $gc_probability,
+      'session.gc_divisor'     => $gc_divisor,
+      'probability'            => $gc_probability / $gc_divisor * 100 . '%',
     );
   }
 
@@ -597,7 +596,7 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    */
   public function destroy($session_id)
   {
-    $query = "DELETE FROM `" . $this->table_name . "`
+    $query = "DELETE FROM " . $this->table_name . "
       WHERE session_id = '" . $this->db->escape($session_id) . "'
     ";
 
@@ -637,7 +636,7 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    * @return true
    */
   public function open(/* @noinspection PhpUnusedParameterInspection */
-      $save_path, $session_name)
+    $save_path, $session_name)
   {
     return true;
   }
@@ -686,7 +685,7 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
     $query = "SELECT
           session_data
       FROM
-          `" . $this->table_name . "`
+          " . $this->table_name . "
       WHERE session_id = '" . $this->db->escape($session_id) . "'
       AND session_expire > '" . time() . "'
       AND hash = '" . $this->db->escape(md5($hash)) . "'
@@ -725,7 +724,7 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
 
     /* @noinspection PhpWrongStringConcatenationInspection */
     $query = "INSERT INTO
-      `" . $this->table_name . "`
+      " . $this->table_name . "
       (
         session_id,
         hash,
