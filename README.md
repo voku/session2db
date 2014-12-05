@@ -32,6 +32,12 @@ The code is heavily commented and generates no warnings/errors/notices when PHP'
 
 PHP 5+ with the **mysqli extension** activated, MySQL 4.1.22+
 
+## How to install
+
+```shell
+composer require voku/session2db
+```
+
 ## How to use
 
 Download the latest version, unpack it, and put it in a place accessible to your scripts. After unpacking, you will notice a directory called *install* containing a file named *session_data.sql*. This file contains the SQL code that will create a table that is used by the class to store session data. Import or execute the SQL code using your preferred MySQL manager (like phpMyAdmin or the fantastic Adminer) into a database of your choice.
