@@ -261,6 +261,7 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
 
     // Prevent session-fixation
     // See: http://en.wikipedia.org/wiki/Session_fixation
+    ini_set("session.cookie_httponly", 1);
     ini_set("session.session.use_only_cookies", 1);
 
     // Use the SHA-1 hashing algorithm
@@ -319,30 +320,30 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
 
       // register the new handler
       session_set_save_handler(
-        array(
-          &$this,
-          'open'
-        ),
-        array(
-          &$this,
-          'close'
-        ),
-        array(
-          &$this,
-          'read'
-        ),
-        array(
-          &$this,
-          'write'
-        ),
-        array(
-          &$this,
-          'destroy'
-        ),
-        array(
-          &$this,
-          'gc'
-        )
+          array(
+              &$this,
+              'open'
+          ),
+          array(
+              &$this,
+              'close'
+          ),
+          array(
+              &$this,
+              'read'
+          ),
+          array(
+              &$this,
+              'write'
+          ),
+          array(
+              &$this,
+              'destroy'
+          ),
+          array(
+              &$this,
+              'gc'
+          )
       );
 
       // start the session
@@ -368,10 +369,10 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
 
       // handle flashdata after script execution
       register_shutdown_function(
-        array(
-          $this,
-          '_manage_flashdata'
-        )
+          array(
+              $this,
+              '_manage_flashdata'
+          )
       );
 
       // if no DB connections could be found
@@ -476,10 +477,10 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
 
     // return them as an array
     return array(
-      'session.gc_maxlifetime' => $gc_maxlifetime . ' seconds (' . round($gc_maxlifetime / 60) . ' minutes)',
-      'session.gc_probability' => $gc_probability,
-      'session.gc_divisor'     => $gc_divisor,
-      'probability'            => $gc_probability / $gc_divisor * 100 . '%',
+        'session.gc_maxlifetime' => $gc_maxlifetime . ' seconds (' . round($gc_maxlifetime / 60) . ' minutes)',
+        'session.gc_probability' => $gc_probability,
+        'session.gc_divisor'     => $gc_divisor,
+        'probability'            => $gc_probability / $gc_divisor * 100 . '%',
     );
   }
 
@@ -636,7 +637,7 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    * @return true
    */
   public function open(/* @noinspection PhpUnusedParameterInspection */
-    $save_path, $session_name)
+      $save_path, $session_name)
   {
     return true;
   }
