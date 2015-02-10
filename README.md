@@ -1,4 +1,8 @@
 [![Build Status](https://travis-ci.org/voku/session2db.svg?branch=master)](https://travis-ci.org/voku/session2db)
+[![Coverage Status](https://coveralls.io/repos/voku/session2db/badge.svg)](https://coveralls.io/r/voku/session2db)
+[![SensioLabsInsight](https://insight.sensiolabs.com/projects/32d82172-bf23-4b04-bef9-86c64d498763/mini.png)](https://insight.sensiolabs.com/projects/32d82172-bf23-4b04-bef9-86c64d498763)
+[![Total Downloads](https://poser.pugx.org/voku/session2db/downloads.svg)](https://packagist.org/packages/voku/session2db)
+[![License](https://poser.pugx.org/voku/session2db/license.svg)](https://packagist.org/packages/voku/session2db)
 
 ##Session2DB
 
@@ -50,7 +54,7 @@ Download the latest version, unpack it, and put it in a place accessible to your
     // include autoloader
     require_once 'vendor/autoload.php';
 
-    $session = new voku/helper/Session2DB($link, 'sEcUr1tY_c0dE');
+    $session = new voku/helper/Session2DB();
 
     // from now on, use sessions as you would normally
     // this is why it is called a "drop-in replacement" :)
