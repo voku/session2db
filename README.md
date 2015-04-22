@@ -3,7 +3,7 @@
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/voku/session2db/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/voku/session2db/?branch=master)
 [![SensioLabsInsight](https://insight.sensiolabs.com/projects/32d82172-bf23-4b04-bef9-86c64d498763/mini.png)](https://insight.sensiolabs.com/projects/32d82172-bf23-4b04-bef9-86c64d498763)
 [![Dependency Status](https://www.versioneye.com/php/voku:session2db/dev-master/badge.svg)](https://www.versioneye.com/php/voku:session2db/dev-master)
-[![Total Downloads](https://poser.pugx.org/voku/session2db/downloads.svg)](https://packagist.org/packages/voku/session2db)
+[![Total Downloads](https://poser.pugx.org/voku/session2db/downloads)](https://packagist.org/packages/voku/session2db)
 [![License](https://poser.pugx.org/voku/session2db/license.svg)](https://packagist.org/packages/voku/session2db)
 
 ##Session2DB
