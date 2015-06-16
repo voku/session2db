@@ -5,25 +5,30 @@ namespace voku\helper;
 use voku\db\DB;
 
 /**
- *  A PHP library acting as a drop-in replacement for PHP's default session handler, but instead of storing session data
+ *  A PHP library acting as a drop-in replacement for PHP's default session handler, but instead of storing session
+ *  data
  *  in flat files it stores them in a database, providing both better performance and better security and
  *  protection against session fixation and session hijacking.
  *
- *  Session (Zebra_Session ) implements <i>session locking</i>. Session locking is a way to ensure that data is correctly handled
- *  in a scenario with multiple concurrent AJAX requests. Read more about it in this excellent article by Andy Bakun
- *  called {@link http://thwartedefforts.org/2006/11/11/race-conditions-with-ajax-and-php-sessions/ Race Conditions with Ajax and PHP Sessions}.
+ *  Session (Zebra_Session ) implements <i>session locking</i>. Session locking is a way to ensure that data is
+ *  correctly handled in a scenario with multiple concurrent AJAX requests. Read more about it in this excellent
+ *  article by Andy Bakun called {@link
+ *  http://thwartedefforts.org/2006/11/11/race-conditions-with-ajax-and-php-sessions/ Race Conditions with Ajax and PHP
+ *  Sessions}.
  *
  *  This library is also a solution for applications that are scaled across multiple web servers (using a
  *  load balancer or a round-robin DNS) and where the user's session data needs to be available. Storing sessions in a
  *  database makes them available to all of the servers!
  *
- *  Session (Zebra_Session ) supports "flashdata" - session variable which will only be available for the next server request, and
- *  which will be automatically deleted afterwards. Typically used for informational or status messages (for example:
+ *  Session (Zebra_Session ) supports "flashdata" - session variable which will only be available for the next server
+ *  request, and which will be automatically deleted afterwards. Typically used for informational or status messages
+ *  (for example:
  *  "data has been successfully updated").
  *
  *  This is a fork of "Zebra_Session " and that was inspired by John Herren's code from
  *  the {@link http://devzone.zend.com/413/trick-out-your-session-handler/ Trick out your session handler}
- *  article and {@link http://shiflett.org/articles/the-truth-about-sessions Chris Shiflett}'s articles about PHP sessions.
+ *  article and {@link http://shiflett.org/articles/the-truth-about-sessions Chris Shiflett}'s articles about PHP
+ *  sessions.
  *
  *
  *  Visit {@link http://stefangabos.ro/php-libraries/zebra-session/} for more information.
@@ -121,79 +126,89 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    *
    *  From now on whenever PHP sets the 'PHPSESSID' cookie, the cookie will be available to all subdomains!
    *
-   * @param string  $security_code            (Optional) The value of this argument is appended to the string created by
+   * @param string     $security_code         (Optional) The value of this argument is appended to the string created
+   *                                          by
    *                                          concatenating the user's User Agent (browser) string (or an empty string
    *                                          if "lock_to_user_agent" is FALSE) and to the user's IP address (or an
    *                                          empty string if "lock_to_ip" is FALSE), before creating an MD5 hash out
    *                                          of it and storing it in the database.
    *
    *                                          On each call this value will be generated again and compared to the
-   *                                          value stored in the database ensuring that the session is correctly linked
-   *                                          with the user who initiated the session thus preventing session hijacking.
+   *                                          value stored in the database ensuring that the session is correctly
+   *                                          linked
+   *                                          with the user who initiated the session thus preventing session
+   *                                          hijacking.
    *
    *                                          <samp>To prevent session hijacking, make sure you choose a string around
    *                                          12 characters long containing upper- and lowercase letters, as well as
-   *                                          digits. To simplify the process, use {@link https://www.random.org/passwords/?num=1&len=12&format=html&rnd=new this}
+   *                                          digits. To simplify the process, use {@link
+   *                                          https://www.random.org/passwords/?num=1&len=12&format=html&rnd=new this}
    *                                          link to generate such a random string.</samp>
    *
-   * @param         $session_lifetime         (Optional) The number of seconds after which a session will be considered
+   * @param  int|mixed $session_lifetime      (Optional) The number of seconds after which a session will be considered
    *                                          as <i>expired</i>.
    *
    *                                          Expired sessions are cleaned up from the database whenever the <i>garbage
-   *                                          collection routine</i> is run. The probability of the <i>garbage collection
-   *                                          routine</i> to be executed is given by the values of <i>$gc_probability</i>
-   *                                          and <i>$gc_divisor</i>. See below.
+   *                                          collection routine</i> is run. The probability of the <i>garbage
+   *                                          collection routine</i> to be executed is given by the values of
+   *                                          <i>$gc_probability</i> and <i>$gc_divisor</i>. See below.
    *
-   *                                          Default is the value of <i>session.gc_maxlifetime</i> as set in in php.ini.
-   *                                          Read more at {@link http://www.php.net/manual/en/session.configuration.php}
+   *                                          Default is the value of <i>session.gc_maxlifetime</i> as set in in
+   *                                          php.ini. Read more at {@link
+   *                                          http://www.php.net/manual/en/session.configuration.php}
    *
-   *                                          To clear any confusions that may arise: in reality, <i>session.gc_maxlifetime</i>
-   *                                          does not represent a session's lifetime but the number of seconds after
-   *                                          which a session is seen as <i>garbage</i> and is deleted by the <i>garbage
-   *                                          collection routine</i>. The PHP setting that sets a session's lifetime is
-   *                                          <i>session.cookie_lifetime</i> and is usually set to "0" - indicating that
-   *                                          a session is active until the browser/browser tab is closed. When this class
-   *                                          is used, a session is active until the browser/browser tab is closed and/or
-   *                                          a session has been inactive for more than the number of seconds specified
-   *                                          by <i>session.gc_maxlifetime</i>.
+   *                                          To clear any confusions that may arise: in reality,
+   *                                          <i>session.gc_maxlifetime</i> does not represent a session's lifetime but
+   *                                          the number of seconds after which a session is seen as <i>garbage</i> and
+   *                                          is deleted by the <i>garbage collection routine</i>. The PHP setting that
+   *                                          sets a session's lifetime is
+   *                                          <i>session.cookie_lifetime</i> and is usually set to "0" - indicating
+   *                                          that
+   *                                          a session is active until the browser/browser tab is closed. When this
+   *                                          class is used, a session is active until the browser/browser tab is
+   *                                          closed and/or a session has been inactive for more than the number of
+   *                                          seconds specified by <i>session.gc_maxlifetime</i>.
    *
    *                                          To see the actual value of <i>session.gc_maxlifetime</i> for your
    *                                          environment, use the {@link get_settings()} method.
    *
    *                                          Pass an empty string to keep default value.
    *
-   * @param boolean $lock_to_user_agent       (Optional) Whether to restrict the session to the same User Agent (or
+   * @param boolean    $lock_to_user_agent    (Optional) Whether to restrict the session to the same User Agent (or
    *                                          browser) as when the session was first opened.
    *
    *                                          <i>The user agent check only adds minor security, since an attacker that
    *                                          hijacks the session cookie will most likely have the same user agent.</i>
    *
-   *                                          In certain scenarios involving Internet Explorer, the browser will randomly
-   *                                          change the user agent string from one page to the next by automatically
-   *                                          switching into compatibility mode. So, on the first load you would have
-   *                                          something like:
+   *                                          In certain scenarios involving Internet Explorer, the browser will
+   *                                          randomly change the user agent string from one page to the next by
+   *                                          automatically switching into compatibility mode. So, on the first load
+   *                                          you would have something like:
    *
-   *                                          <code>Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.1; Trident/4.0; etc...</code>
+   *                                          <code>Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.1; Trident/4.0;
+   *                                          etc...</code>
    *
    *                                          and reloading the page you would have
    *
-   *                                          <code> Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; Trident/4.0; etc...</code>
+   *                                          <code> Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; Trident/4.0;
+   *                                          etc...</code>
    *
    *                                          So, if the situation asks for this, change this value to FALSE.
    *
    *                                          Default is TRUE.
    *
-   * @param boolean $lock_to_ip               (Optional)    Whether to restrict the session to the same IP as when the
+   * @param boolean    $lock_to_ip            (Optional)    Whether to restrict the session to the same IP as when the
    *                                          session was first opened.
    *
    *                                          Use this with caution as many users have dynamic IP addresses which may
    *                                          change over time, or may come through proxies.
    *
-   *                                          This is mostly useful if your know that all your users come from static IPs.
+   *                                          This is mostly useful if your know that all your users come from static
+   *                                          IPs.
    *
    *                                          Default is FALSE.
    *
-   * @param int     $gc_probability           (Optional)    Used in conjunction with <i>$gc_divisor</i>. It defines the
+   * @param int        $gc_probability        (Optional)    Used in conjunction with <i>$gc_divisor</i>. It defines the
    *                                          probability that the <i>garbage collection routine</i> is started.
    *
    *                                          The probability is expressed by the formula:
@@ -202,12 +217,14 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    *                                          $probability = $gc_probability / $gc_divisor;
    *                                          </code>
    *
-   *                                          So, if <i>$gc_probability</i> is 1 and <i>$gc_divisor</i> is 100, it means
+   *                                          So, if <i>$gc_probability</i> is 1 and <i>$gc_divisor</i> is 100, it
+   *                                          means
    *                                          that there is a 1% chance the the <i>garbage collection routine</i> will
    *                                          be called on each request.
    *
    *                                          Default is the value of <i>session.gc_probability</i> as set in php.ini.
-   *                                          Read more at {@link http://www.php.net/manual/en/session.configuration.php}
+   *                                          Read more at {@link
+   *                                          http://www.php.net/manual/en/session.configuration.php}
    *
    *                                          To see the actual value of <i>session.gc_probability</i> for your
    *                                          environment, and the computed <i>probability</i>, use the
@@ -215,8 +232,9 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    *
    *                                          Pass an empty string to keep default value.
    *
-   * @param int     $gc_divisor               (Optional)        Used in conjunction with <i>$gc_probability</i>. It defines the
-   *                                          probability that the <i>garbage collection routine</i> is started.
+   * @param int        $gc_divisor            (Optional)        Used in conjunction with <i>$gc_probability</i>. It
+   *                                          defines the probability that the <i>garbage collection routine</i> is
+   *                                          started.
    *
    *                                          The probability is expressed by the formula:
    *
@@ -224,12 +242,14 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    *                                          $probability = $gc_probability / $gc_divisor;
    *                                          </code>
    *
-   *                                          So, if <i>$gc_probability</i> is 1 and <i>$gc_divisor</i> is 100, it means
+   *                                          So, if <i>$gc_probability</i> is 1 and <i>$gc_divisor</i> is 100, it
+   *                                          means
    *                                          that there is a 1% chance the the <i>garbage collection routine</i> will
    *                                          be called on each request.
    *
    *                                          Default is the value of <i>session.gc_divisor</i> as set in php.ini.
-   *                                          Read more at {@link http://www.php.net/manual/en/session.configuration.php}
+   *                                          Read more at {@link
+   *                                          http://www.php.net/manual/en/session.configuration.php}
    *
    *                                          To see the actual value of <i>session.gc_divisor</i> for your
    *                                          environment, and the computed <i>probability</i>, use the
@@ -237,12 +257,12 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    *
    *                                          Pass an empty string to keep default value.
    *
-   * @param string  $table_name               (Optional)     Name of the DB table used by the class.
+   * @param string     $table_name            (Optional)     Name of the DB table used by the class.
    *
    *                                          Default is <i>session_data</i>.
    *
-   * @param int     $lock_timeout             (Optional)      The maximum amount of time (in seconds) for which a lock on
-   *                                          the session data can be kept.
+   * @param int        $lock_timeout          (Optional)      The maximum amount of time (in seconds) for which a lock
+   *                                          on the session data can be kept.
    *
    *                                          <i>This must be lower than the maximum execution time of the script!</i>
    *
@@ -250,7 +270,8 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    *                                          scenario with multiple concurrent AJAX requests.
    *
    *                                          Read more about it at
-   *                                          {@link http://thwartedefforts.org/2006/11/11/race-conditions-with-ajax-and-php-sessions/}
+   *                                          {@link
+   *                                          http://thwartedefforts.org/2006/11/11/race-conditions-with-ajax-and-php-sessions/}
    *
    *                                          Default is <i>60</i>
    *
@@ -261,14 +282,14 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
 
     // Prevent session-fixation
     // See: http://en.wikipedia.org/wiki/Session_fixation
-    ini_set("session.cookie_httponly", 1);
-    ini_set("session.session.use_only_cookies", 1);
+    ini_set('session.cookie_httponly', 1);
+    ini_set('session.session.use_only_cookies', 1);
 
     // Use the SHA-1 hashing algorithm
-    ini_set("session.hash_function", 1);
+    ini_set('session.hash_function', 1);
 
     // Increase character-range of the session ID to help prevent brute-force attacks
-    ini_set("session.hash_bits_per_character", 6);
+    ini_set('session.hash_bits_per_character', 6);
 
     // fallback for the security-code
     if (!$security_code || $security_code = '###set_the_security_key###') {
@@ -283,22 +304,20 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
       ini_set('session.cookie_lifetime', 0);
 
       // if $session_lifetime is specified and is an integer number
-      if ($session_lifetime != '' && is_integer($session_lifetime)) {
+      if ($session_lifetime != '' && is_int($session_lifetime)) {
         ini_set('session.gc_maxlifetime', (int)$session_lifetime);
-      }
-      // fallback from cms-config
-      else {
+      } else {
         // fallback to 1h - 3600s
         ini_set('session.gc_maxlifetime', 3600);
       }
 
       // if $gc_probability is specified and is an integer number
-      if ($gc_probability != '' && is_integer($gc_probability)) {
+      if ($gc_probability != '' && is_int($gc_probability)) {
         ini_set('session.gc_probability', $gc_probability);
       }
 
       // if $gc_divisor is specified and is an integer number
-      if ($gc_divisor != '' && is_integer($gc_divisor)) {
+      if ($gc_divisor != '' && is_int($gc_divisor)) {
         ini_set('session.gc_divisor', $gc_divisor);
       }
 
@@ -322,32 +341,34 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
       session_set_save_handler(
           array(
               &$this,
-              'open'
+              'open',
           ),
           array(
               &$this,
-              'close'
+              'close',
           ),
           array(
               &$this,
-              'read'
+              'read',
           ),
           array(
               &$this,
-              'write'
+              'write',
           ),
           array(
               &$this,
-              'destroy'
+              'destroy',
           ),
           array(
               &$this,
-              'gc'
+              'gc',
           )
       );
 
       // start the session
-      session_start();
+      if (PHP_SAPI != 'cli') {
+        session_start();
+      }
 
       // running from the cli doesn't set $_SESSION
       if (!isset($_SESSION)) {
@@ -371,7 +392,7 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
       register_shutdown_function(
           array(
               $this,
-              '_manage_flashdata'
+              '_manage_flashdata',
           )
       );
 
@@ -437,8 +458,8 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
   }
 
   /**
-   *  Queries the system for the values of <i>session.gc_maxlifetime</i>, <i>session.gc_probability</i> and <i>session.gc_divisor</i>
-   *  and returns them as an associative array.
+   *  Queries the system for the values of <i>session.gc_maxlifetime</i>, <i>session.gc_probability</i> and
+   *  <i>session.gc_divisor</i> and returns them as an associative array.
    *
    *  To view the result in a human-readable format use:
    *  <code>
@@ -464,8 +485,8 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    *
    * @since 1.0.0
    *
-   * @return array   Returns the values of <i>session.gc_maxlifetime</i>, <i>session.gc_probability</i> and <i>session.gc_divisor</i>
-   *                  as an associative array.
+   * @return array   Returns the values of <i>session.gc_maxlifetime</i>, <i>session.gc_probability</i> and
+   *                 <i>session.gc_divisor</i> as an associative array.
    *
    */
   public function get_settings()
@@ -550,7 +571,6 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
     $this->regenerate_id();
 
     session_unset();
-
     session_destroy();
   }
 
@@ -575,17 +595,9 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    */
   public function regenerate_id()
   {
-    // saves the old session's id
-    $old_session_id = session_id();
-
-    // regenerates the id
-    // this function will create a new session, with a new id and containing the data from the old session
-    // but will not delete the old session
-    session_regenerate_id();
-
-    // because the session_regenerate_id() function does not delete the old session,
-    // we have to delete it manually
-    $this->destroy($old_session_id);
+    // regenerates the id (create a new session with a new id and containing the data from the old session)
+    // also, delete the old session
+    session_regenerate_id(true);
   }
 
   /**
@@ -636,16 +648,17 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    *
    * @return true
    */
-  public function open(/* @noinspection PhpUnusedParameterInspection */
-      $save_path, $session_name)
+  public function open(/* @noinspection PhpUnusedParameterInspection */ $save_path, $session_name)
   {
     return true;
   }
 
   /**
-   *  Custom read() function
+   * Custom read() function
    *
-   * @access private
+   * @param $session_id
+   *
+   * @return string
    */
   public function read($session_id)
   {
@@ -684,11 +697,11 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
     $hash .= $this->security_code;
 
     $query = "SELECT
-          session_data
+        session_data
       FROM
-          " . $this->table_name . "
+        " . $this->table_name . "
       WHERE session_id = '" . $this->db->escape($session_id) . "'
-      AND session_expire > '" . time() . "'
+      AND session_expire > '" . $this->db->escape(time()) . "'
       AND hash = '" . $this->db->escape(md5($hash)) . "'
       LIMIT 1
     ";
@@ -773,11 +786,8 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
         // if we're past the first server request
         if ($this->flashdata[$variable] > 1) {
 
-          // unset the session variable
-          unset($_SESSION[$variable]);
-
-          // stop tracking
-          unset($this->flashdata[$variable]);
+          // unset the session variable & stop tracking
+          unset($_SESSION[$variable], $this->flashdata[$variable]);
         }
       }
 
