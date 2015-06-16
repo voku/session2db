@@ -11,7 +11,8 @@ if (!isset($_SESSION)) {
 /**
  * Class SimpleSessionTest
  */
-class SimpleSessionTest extends PHPUnit_Framework_TestCase {
+class SimpleSessionTest extends PHPUnit_Framework_TestCase
+{
 
   /**
    * @var DB
@@ -31,7 +32,8 @@ class SimpleSessionTest extends PHPUnit_Framework_TestCase {
   /**
    * __construct
    */
-  public function __construct() {
+  public function __construct()
+  {
     $this->db = DB::getInstance('localhost', 'root', '', 'mysql_test');
   }
 
@@ -42,17 +44,20 @@ class SimpleSessionTest extends PHPUnit_Framework_TestCase {
     self::assertEquals('3600 seconds (60 minutes)', $settings['session.gc_maxlifetime']);
     self::assertEquals('1', $settings['session.gc_probability']);
     self::assertEquals('1000', $settings['session.gc_divisor']);
-    self::assertEquals('0.10000000000000001%', $settings['probability']);
+    self::assertContains('0.1', $settings['probability']);
+    self::assertContains('%', $settings['probability']);
   }
 
-  public function testBasic() {
+  public function testBasic()
+  {
     $_SESSION['test'] = 123;
     $this->session2DB->write($this->session_id, serialize($_SESSION));
 
     self::assertEquals('123', $_SESSION['test']);
   }
 
-  public function testBasic2() {
+  public function testBasic2()
+  {
     $data = $this->session2DB->read($this->session_id);
     $_SESSION = unserialize($data);
 
@@ -68,6 +73,18 @@ class SimpleSessionTest extends PHPUnit_Framework_TestCase {
     self::assertEquals('1', $sessionsCount1);
     self::assertEquals('0', $sessionsCount2);
     self::assertEquals('0', count($_SESSION));
+  }
+
+  public function testLall()
+  {
+    $this->session2DB->set_flashdata('test2', 'lall');
+    self::assertEquals('lall', $_SESSION['test2']);
+
+    $this->session2DB->_manage_flashdata();
+    self::assertEquals('lall', $_SESSION['test2']);
+
+    $this->session2DB->_manage_flashdata();
+    self::assertEquals(false, isset($_SESSION['test2']));
   }
 
   public function setUp()
