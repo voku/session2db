@@ -61,8 +61,12 @@ class SimpleSessionTest extends PHPUnit_Framework_TestCase {
 
   public function testDestroy()
   {
+    $sessionsCount1 = $this->session2DB->get_active_sessions();
     $this->session2DB->destroy($this->session_id);
+    $sessionsCount2 = $this->session2DB->get_active_sessions();
 
+    self::assertEquals('1', $sessionsCount1);
+    self::assertEquals('0', $sessionsCount2);
     self::assertEquals('0', count($_SESSION));
   }
 
