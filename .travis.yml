@@ -5,14 +5,18 @@ php:
   - 5.4
   - 5.5
   - 5.6
+  - 7.0
   - nightly
+  - hhvm
+  - hhvm-nightly
 
 before_script:
   - wget https://scrutinizer-ci.com/ocular.phar
   - mysql -e 'CREATE DATABASE mysql_test;'
   - mysql -e 'USE mysql_test; CREATE TABLE session_data ( session_id varchar(32) NOT NULL default "", hash varchar(32) NOT NULL default "", session_data blob NOT NULL, session_expire int(11) NOT NULL default "0", PRIMARY KEY (session_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC;'
-  - composer self-update
-  - composer install --no-interaction --prefer-source
+  - travis_retry composer self-update
+  - travis_retry composer install --no-interaction --prefer-source
+  - composer dump-autoload -o
 
 script:
   - mkdir -p build/logs
@@ -21,3 +25,8 @@ script:
 after_script:
   - php vendor/bin/coveralls -v
   - php ocular.phar code-coverage:upload --format=php-clover build/logs/clover.xml
+  
+matrix:
+  allow_failures:
+    - php: hhvm
+    - php: hhvm-nightly
