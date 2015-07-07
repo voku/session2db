@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/voku/session2db.svg?branch=master)](https://travis-ci.org/voku/session2db)
-[![Coverage Status](https://coveralls.io/repos/voku/session2db/badge.svg)](https://coveralls.io/r/voku/session2db)
+[![Coverage Status](https://coveralls.io/repos/github/voku/session2db/badge.svg?branch=master)](https://coveralls.io/github/voku/session2db?branch=master)
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/voku/session2db/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/voku/session2db/?branch=master)
 [![Codacy Badge](https://www.codacy.com/project/badge/836db772ff9443b18103d6a6c6ee35eb)](https://www.codacy.com/app/voku/session2db)
 [![SensioLabsInsight](https://insight.sensiolabs.com/projects/32d82172-bf23-4b04-bef9-86c64d498763/mini.png)](https://insight.sensiolabs.com/projects/32d82172-bf23-4b04-bef9-86c64d498763)
