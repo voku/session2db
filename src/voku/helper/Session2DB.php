@@ -618,9 +618,9 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
 
     if ($result > 0) {
       return true;
+    } else {
+      return false;
     }
-
-    return false;
   }
 
   /**

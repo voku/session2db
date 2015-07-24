@@ -1,6 +1,10 @@
 <?php
 
 require_once dirname(__DIR__) . '/vendor/autoload.php';
+require_once dirname(__DIR__) . '/src/voku/helper/Session2DB.php';
+// vendor
+require_once dirname(__DIR__) . '/vendor/voku/simple-mysqli/src/voku/db/DB.php';
+require_once dirname(__DIR__) . '/vendor/voku/simple-mysqli/src/voku/db/Result.php';
 
 /*
 CREATE DATABASE mysql_test;
