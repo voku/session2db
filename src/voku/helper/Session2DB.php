@@ -429,9 +429,9 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
     // call the garbage collector
     $this->gc($this->session_lifetime);
 
-    $query = "SELECT COUNT(session_id) as count
-      FROM " . $this->table_name . "
-    ";
+    $query = 'SELECT COUNT(session_id) as count
+      FROM ' . $this->table_name . '
+    ';
 
     // counts the rows from the database
     $result = $this->db->query($query);
@@ -449,7 +449,7 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    */
   public function gc(/* @noinspection PhpUnusedParameterInspection */ $maxlifetime)
   {
-    $query = "DELETE FROM " . $this->table_name . "
+    $query = 'DELETE FROM ' . $this->table_name . "
       WHERE session_expire < '" . $this->db->escape(time()) . "'
     ";
 
@@ -609,7 +609,7 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    */
   public function destroy($session_id)
   {
-    $query = "DELETE FROM " . $this->table_name . "
+    $query = 'DELETE FROM ' . $this->table_name . "
       WHERE session_id = '" . $this->db->escape($session_id) . "'
     ";
 
@@ -665,7 +665,7 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
     // get the lock name, associated with the current session
     $this->look_name = $this->db->escape('session_' . $session_id);
 
-    $query_lock = "SELECT GET_LOCK('" . $this->look_name . "', " . $this->db->escape($this->lock_timeout) . ")";
+    $query_lock = "SELECT GET_LOCK('" . $this->look_name . "', " . $this->db->escape($this->lock_timeout) . ')';
 
     // try to obtain a lock with the given name and timeout
     $result_lock = $this->db->query($query_lock);
@@ -696,10 +696,10 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
     // append this to the end
     $hash .= $this->security_code;
 
-    $query = "SELECT
+    $query = 'SELECT
         session_data
       FROM
-        " . $this->table_name . "
+        ' . $this->table_name . "
       WHERE session_id = '" . $this->db->escape($session_id) . "'
       AND session_expire > '" . $this->db->escape(time()) . "'
       AND hash = '" . $this->db->escape(md5($hash)) . "'
@@ -737,8 +737,8 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
     $hash = md5(($this->lock_to_user_agent && isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '') . ($this->lock_to_ip && isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '') . $this->security_code);
 
     /* @noinspection PhpWrongStringConcatenationInspection */
-    $query = "INSERT INTO
-      " . $this->table_name . "
+    $query = 'INSERT INTO
+      ' . $this->table_name . "
       (
         session_id,
         hash,
