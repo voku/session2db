@@ -44,6 +44,15 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
 {
 
   /**
+   * the name for the session variable that will be created upon script execution
+   * and destroyed when instantiating this library, and which will hold information
+   * about flashdata session variables
+   *
+   * @var string
+   */
+  const flashDataVarName = '_menadwork_session_flashdata_ec3asbuiad';
+
+  /**
    * @var DB
    */
   private $db;
@@ -52,15 +61,6 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    * @var array
    */
   private $flashdata = array();
-
-  /**
-   * the name for the session variable that will be created upon script execution
-   * and destroyed when instantiating this library, and which will hold information
-   * about flashdata session variables
-   *
-   * @var string
-   */
-  private $flashdata_varname = '_menadwork_session_flashdata_ec3asbuiad';
 
   /*
    * @var int
@@ -379,13 +379,13 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
       $this->flashdata = array();
 
       // if there are any flashdata variables that need to be handled
-      if (isset($_SESSION[$this->flashdata_varname])) {
+      if (isset($_SESSION[self::flashDataVarName])) {
 
         // store them
-        $this->flashdata = unserialize($_SESSION[$this->flashdata_varname]);
+        $this->flashdata = unserialize($_SESSION[self::flashDataVarName]);
 
         // and destroy the temporary session variable
-        unset($_SESSION[$this->flashdata_varname]);
+        unset($_SESSION[self::flashDataVarName]);
       }
 
       // handle flashdata after script execution
@@ -794,7 +794,7 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
       // if there is any flashdata left to be handled
       // ... then store data in a temporary session variable
       if (!empty($this->flashdata)) {
-        $_SESSION[$this->flashdata_varname] = serialize($this->flashdata);
+        $_SESSION[self::flashDataVarName] = serialize($this->flashdata);
       }
     }
   }
