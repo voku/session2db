@@ -36,7 +36,6 @@ use voku\db\DB;
  *
  * @author     Stefan Gabos <contact@stefangabos.ro>
  * @autor      Lars Moelleken <lars@moelleken.org>
- * @version    1.0.1
  * @license    http://www.gnu.org/licenses/lgpl-3.0.txt GNU LESSER GENERAL PUBLIC LICENSE
  * @package    voku\helper
  */
