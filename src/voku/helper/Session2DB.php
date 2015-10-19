@@ -30,7 +30,6 @@ use voku\db\DB;
  *  article and {@link http://shiflett.org/articles/the-truth-about-sessions Chris Shiflett}'s articles about PHP
  *  sessions.
  *
- *
  *  Visit {@link http://stefangabos.ro/php-libraries/zebra-session/} for more information.
  *
  *
@@ -98,11 +97,11 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    *  <code>
    *  // first, connect to a database containing the sessions table
    *
-   *  //  include the class
-   *  require 'path/to/Session.php';
+   *  //  include the class (use the composer-"autoloader")
+   *  require 'vendor/autoload.php';
    *
    *  //  start the session
-   *  $session = new Session();
+   *  $session = new Session2DB();
    *  </code>
    *
    *  By default, the cookie used by PHP to propagate session data across multiple pages ('PHPSESSID') uses the
@@ -411,11 +410,11 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    *  <code>
    *  // first, connect to a database containing the sessions table
    *
-   *  //  include the class
-   *  require 'path/to/Session.php';
+   *  //  include the class (use the composer-"autoloader")
+   *  require 'vendor/autoload.php';
    *
    *  //  start the session
-   *  $session = new Session();
+   *  $session = new Session2DB();
    *
    *  //  get the (approximate) number of active sessions
    *  $active_sessions = $session->get_active_sessions();
@@ -462,11 +461,11 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    *
    *  To view the result in a human-readable format use:
    *  <code>
-   *  //  include the class
-   *  require 'path/to/Session.php';
+   *  //  include the class (use the composer-"autoloader")
+   *  require 'vendor/autoload.php';
    *
-   *  //  instantiate the class
-   *  $session = new Session();
+   *  //  start the session
+   *  $session = new Session2DB();
    *
    *  //  get default settings
    *  print_r('<pre>');
@@ -513,11 +512,11 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    *  <code>
    *  // first, connect to a database containing the sessions table
    *
-   *  // include the library
-   *  require 'path/to/Session.php';
+   *  //  include the class (use the composer-"autoloader")
+   *  require 'vendor/autoload.php';
    *
    *  //  start the session
-   *  $session = new Session();
+   *  $session = new Session2DB();
    *
    *  // set "myvar" which will only be available
    *  // for the next server request and will be
@@ -554,11 +553,11 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    *  <code>
    *  // first, connect to a database containing the sessions table
    *
-   *  //  include the class
-   *  require 'path/to/Session.php';
+   *  //  include the class (use the composer-"autoloader")
+   *  require 'vendor/autoload.php';
    *
    *  //  start the session
-   *  $session = new Session();
+   *  $session = new Session2DB();
    *
    *  //  end current session
    *  $session->stop();
@@ -581,11 +580,11 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    *  <code>
    *  // first, connect to a database containing the sessions table
    *
-   *  //  include the class
-   *  require 'path/to/Session.php';
+   *  //  include the class (use the composer-"autoloader")
+   *  require 'vendor/autoload.php';
    *
    *  //  start the session
-   *  $session = new Session();
+   *  $session = new Session2DB();
    *
    *  //  regenerate the session's ID
    *  $session->regenerate_id();
@@ -669,8 +668,7 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
     // try to obtain a lock with the given name and timeout
     $result_lock = $this->db->query($query_lock);
 
-    // if there was an error
-    // stop execution
+    // if there was an error, then stop the execution
     if (!is_object($result_lock) || $result_lock->num_rows != 1) {
       die('Session: Could not obtain session lock!');
     }
