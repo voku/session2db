@@ -70,5 +70,4 @@ After installing, you will notice a directory called *install* containing a file
     $_SESSION['foo'] = 'bar';
 
     // data is in the database!
-?>
 ```
