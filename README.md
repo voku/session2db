@@ -46,23 +46,29 @@ composer require voku/session2db
 
 ## How to use
 
-Download the latest version, unpack it, and put it in a place accessible to your scripts. After unpacking, you will notice a directory called *install* containing a file named *session_data.sql*. This file contains the SQL code that will create a table that is used by the class to store session data. Import or execute the SQL code using your preferred MySQL manager (like phpMyAdmin or the fantastic Adminer) into a database of your choice.
+After installing, you will notice a directory called *install* containing a file named *session_data.sql*. This file contains the SQL code that will create a table that is used by the class to store session data. Import or execute the SQL code using your preferred MySQL manager (like phpMyAdmin or the fantastic Adminer) into a database of your choice.
 
-*Note that this class assumes that there is an active connection to a MySQL database and it does not attempt to create one! If you really need the class to make a database connection, put the code in the "open" method of the class.*
+*Note that this class assumes that there is an active connection to a MySQL database and it does not attempt to create one!
 
 ```php
 <?php
+    use voku\db\DB;
+    use voku\helper\Session2DB;
 
     // include autoloader
-    require_once 'vendor/autoload.php';
+    require_once 'composer/autoload.php';
 
-    $session = new voku/helper/Session2DB();
+    $db = DB::getInstance('yourDbHost', 'yourDbUser', 'yourDbPassword', 'yourDbName');
+
+    // example
+    // $db = DB::getInstance('localhost', 'root', '', 'test');
+    
+    $session = new Session2DB();
 
     // from now on, use sessions as you would normally
     // this is why it is called a "drop-in replacement" :)
     $_SESSION['foo'] = 'bar';
 
     // data is in the database!
-
 ?>
 ```
