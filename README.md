@@ -1,11 +1,11 @@
+[![Join the chat at https://gitter.im/voku/session2db](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/voku/session2db?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/voku/session2db.svg?branch=master)](https://travis-ci.org/voku/session2db)
 [![Coverage Status](https://coveralls.io/repos/github/voku/session2db/badge.svg?branch=master)](https://coveralls.io/github/voku/session2db?branch=master)
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/voku/session2db/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/voku/session2db/?branch=master)
 [![Codacy Badge](https://www.codacy.com/project/badge/836db772ff9443b18103d6a6c6ee35eb)](https://www.codacy.com/app/voku/session2db)
 [![SensioLabsInsight](https://insight.sensiolabs.com/projects/32d82172-bf23-4b04-bef9-86c64d498763/mini.png)](https://insight.sensiolabs.com/projects/32d82172-bf23-4b04-bef9-86c64d498763)
 [![Dependency Status](https://www.versioneye.com/php/voku:session2db/dev-master/badge.svg)](https://www.versioneye.com/php/voku:session2db/dev-master)
-[![Total Downloads](https://poser.pugx.org/voku/session2db/downloads)](https://packagist.org/packages/voku/session2db)
-[![License](https://poser.pugx.org/voku/session2db/license.svg)](https://packagist.org/packages/voku/session2db)
+[![Latest Stable Version](https://poser.pugx.org/voku/session2db/v/stable)](https://packagist.org/packages/voku/session2db) [![Total Downloads](https://poser.pugx.org/voku/session2db/downloads)](https://packagist.org/packages/voku/session2db) [![Latest Unstable Version](https://poser.pugx.org/voku/session2db/v/unstable)](https://packagist.org/packages/voku/session2db) [![License](https://poser.pugx.org/voku/session2db/license)](https://packagist.org/packages/voku/session2db)
 
 ##Session2DB
 
@@ -47,23 +47,28 @@ composer require voku/session2db
 
 ## How to use
 
-Download the latest version, unpack it, and put it in a place accessible to your scripts. After unpacking, you will notice a directory called *install* containing a file named *session_data.sql*. This file contains the SQL code that will create a table that is used by the class to store session data. Import or execute the SQL code using your preferred MySQL manager (like phpMyAdmin or the fantastic Adminer) into a database of your choice.
+After installing, you will need to initialise the database table from the *install* directory from this repo, it will containing a file named *session_data.sql*. This file contains the SQL code that will create a table that is used by the class to store session data. Import or execute the SQL code using your preferred MySQL manager (like phpMyAdmin or the fantastic Adminer) into a database of your choice.
 
-*Note that this class assumes that there is an active connection to a MySQL database and it does not attempt to create one! If you really need the class to make a database connection, put the code in the "open" method of the class.*
+*Note that this class assumes that there is an active connection to a MySQL database and it does not attempt to create one!
 
 ```php
 <?php
+    use voku\db\DB;
+    use voku\helper\Session2DB;
 
     // include autoloader
-    require_once 'vendor/autoload.php';
+    require_once 'composer/autoload.php';
 
-    $session = new voku/helper/Session2DB();
+    $db = DB::getInstance('yourDbHost', 'yourDbUser', 'yourDbPassword', 'yourDbName');
+
+    // example
+    // $db = DB::getInstance('localhost', 'root', '', 'test');
+    
+    $session = new Session2DB();
 
     // from now on, use sessions as you would normally
     // this is why it is called a "drop-in replacement" :)
     $_SESSION['foo'] = 'bar';
 
     // data is in the database!
-
-?>
 ```
