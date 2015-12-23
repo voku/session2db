@@ -1,3 +1,4 @@
+[![Join the chat at https://gitter.im/voku/session2db](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/voku/session2db?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/voku/session2db.svg?branch=master)](https://travis-ci.org/voku/session2db)
 [![Coverage Status](https://coveralls.io/repos/github/voku/session2db/badge.svg?branch=master)](https://coveralls.io/github/voku/session2db?branch=master)
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/voku/session2db/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/voku/session2db/?branch=master)
