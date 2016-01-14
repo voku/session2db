@@ -15,7 +15,7 @@ before_script:
   - mysql -e 'CREATE DATABASE mysql_test;'
   - mysql -e 'USE mysql_test; CREATE TABLE session_data ( session_id varchar(32) NOT NULL default "", hash varchar(32) NOT NULL default "", session_data blob NOT NULL, session_expire int(11) NOT NULL default "0", PRIMARY KEY (session_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC;'
   - travis_retry composer self-update
-  - travis_retry composer require satooshi/php-coveralls:dev-master
+  - travis_retry composer require satooshi/php-coveralls:1.0.0
   - travis_retry composer install --no-interaction --prefer-source
   - composer dump-autoload -o
 
