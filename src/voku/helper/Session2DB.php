@@ -302,7 +302,7 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
       ini_set('session.cookie_lifetime', 0);
 
       // if $session_lifetime is specified and is an integer number
-      if ($session_lifetime != '' && is_int($session_lifetime)) {
+      if ($session_lifetime !== '' && is_int($session_lifetime)) {
         ini_set('session.gc_maxlifetime', (int)$session_lifetime);
       } else {
         // fallback to 1h - 3600s
@@ -310,12 +310,12 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
       }
 
       // if $gc_probability is specified and is an integer number
-      if ($gc_probability != '' && is_int($gc_probability)) {
+      if ($gc_probability !== '' && is_int($gc_probability)) {
         ini_set('session.gc_probability', $gc_probability);
       }
 
       // if $gc_divisor is specified and is an integer number
-      if ($gc_divisor != '' && is_int($gc_divisor)) {
+      if ($gc_divisor !== '' && is_int($gc_divisor)) {
         ini_set('session.gc_divisor', $gc_divisor);
       }
 
@@ -364,7 +364,7 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
       );
 
       // start the session
-      if (PHP_SAPI != 'cli') {
+      if (PHP_SAPI !== 'cli') {
         session_start();
       }
 
@@ -669,7 +669,7 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
     $result_lock = $this->db->query($query_lock);
 
     // if there was an error, then stop the execution
-    if (!is_object($result_lock) || $result_lock->num_rows != 1) {
+    if (!is_object($result_lock) || $result_lock->num_rows !== 1) {
       die('Session: Could not obtain session lock!');
     }
 

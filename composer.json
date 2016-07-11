@@ -30,7 +30,7 @@
     }
   ],
   "require": {
-    "voku/simple-mysqli": "1.8.*",
+    "voku/simple-mysqli": "~2.0",
     "voku/portable-utf8": "~2.0",
     "php": ">=5.3.0"
   },
