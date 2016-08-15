@@ -54,6 +54,13 @@ class SimpleSessionTest extends PHPUnit_Framework_TestCase
     $this->session2DB->write($this->session_id, serialize($_SESSION));
 
     self::assertSame(123, $_SESSION['test']);
+
+    // ---
+
+    $_SESSION['null'] = null;
+    $this->session2DB->write($this->session_id, serialize($_SESSION));
+
+    self::assertSame(null, $_SESSION['null']);
   }
 
   public function testBasic2()
@@ -62,6 +69,13 @@ class SimpleSessionTest extends PHPUnit_Framework_TestCase
     $_SESSION = unserialize($data);
 
     self::assertSame(123, $_SESSION['test']);
+
+    // ---
+
+    $data = $this->session2DB->read($this->session_id);
+    $_SESSION = unserialize($data);
+
+    self::assertSame(null, $_SESSION['null']);
   }
 
   public function testDestroy()
