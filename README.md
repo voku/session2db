@@ -11,9 +11,9 @@
 [![PHP 7 ready](http://php7ready.timesplinter.ch/voku/session2db/badge.svg)](https://travis-ci.org/voku/session2db)
 [![License](https://poser.pugx.org/voku/session2db/license)](https://packagist.org/packages/voku/session2db)
 
-##Session2DB
+## Session2DB
 
-####A drop-in replacement for PHP's default session handler which stores session data in a database, providing both better performance and better security and protection against session fixation and session hijacking.
+#### A drop-in replacement for PHP's default session handler which stores session data in a database, providing both better performance and better security and protection against session fixation and session hijacking.
 
 Session2DB implements *session locking* - a way to ensure that data is correctly handled in a scenario with multiple concurrent AJAX requests.
 
@@ -25,7 +25,7 @@ Session2DB is was inspired by John Herren's code from the [Trick out your sessio
 
 The code is heavily commented and generates no warnings/errors/notices when PHP's error reporting level is set to E_ALL.
 
-##Features
+## Features
 
 - acts as a wrapper for PHP’s default session handling functions, but instead of storing session data in flat files it stores them in a database, providing better security and better performance
 
