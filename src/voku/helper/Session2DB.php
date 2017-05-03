@@ -283,11 +283,15 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
     ini_set('session.cookie_httponly', 1);
     ini_set('session.session.use_only_cookies', 1);
 
-    // Use the SHA-1 hashing algorithm
-    ini_set('session.hash_function', 1);
+    // PHP 7.1 Incompatible Changes
+    // -> http://php.net/manual/en/migration71.incompatible.php
+    if (Bootup::is_php('7.1') === false) {
+      // Use the SHA-1 hashing algorithm
+      ini_set('session.hash_function', 1);
 
-    // Increase character-range of the session ID to help prevent brute-force attacks
-    ini_set('session.hash_bits_per_character', 6);
+      // Increase character-range of the session ID to help prevent brute-force attacks
+      ini_set('session.hash_bits_per_character', 6);
+    }
 
     // fallback for the security-code
     if (!$security_code || $security_code = '###set_the_security_key###') {
