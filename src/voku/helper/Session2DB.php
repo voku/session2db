@@ -273,10 +273,16 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    *
    *                                          Default is <i>60</i>
    *
+   * @param DB|null    $db                    (Optional)      A database instance from voku\db\DB ("voku/simple-mysqli")
+   *
    */
-  public function __construct($security_code = '', $session_lifetime = '', $lock_to_user_agent = true, $lock_to_ip = false, $gc_probability = 1, $gc_divisor = 1000, $table_name = 'session_data', $lock_timeout = 60)
+  public function __construct($security_code = '', $session_lifetime = '', $lock_to_user_agent = true, $lock_to_ip = false, $gc_probability = 1, $gc_divisor = 1000, $table_name = 'session_data', $lock_timeout = 60, DB $db = null)
   {
-    $this->db = DB::getInstance();
+    if (null !== $db) {
+      $this->db = $db;
+    } else {
+      $this->db = DB::getInstance();
+    }
 
     // Prevent session-fixation
     // See: http://en.wikipedia.org/wiki/Session_fixation
@@ -620,9 +626,9 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
 
     if ($result > 0) {
       return true;
-    } else {
-      return false;
     }
+
+    return false;
   }
 
   /**
@@ -763,9 +769,9 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
 
     if ($result !== false) {
       return true;
-    } else {
-      return false;
     }
+
+    return false;
   }
 
   /**

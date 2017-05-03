@@ -103,7 +103,7 @@ class SimpleSessionTest extends PHPUnit_Framework_TestCase
 
   public function setUp()
   {
-    $this->session2DB = new Session2DB('teste21321_!!', 3600, true, false, 1, 1000, 'session_data', 60);
+    $this->session2DB = new Session2DB('teste21321_!!', 3600, true, false, 1, 1000, 'session_data', 60, $this->db);
   }
 
 }
