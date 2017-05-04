@@ -708,8 +708,8 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
       FROM
         ' . $this->table_name . "
       WHERE session_id = '" . $this->db->escape($session_id) . "'
-      AND session_expire > '" . $this->db->escape(time()) . "'
       AND hash = '" . $this->db->escape(md5($hash)) . "'
+      AND session_expire > '" . $this->db->escape(time()) . "'
       LIMIT 1
     ";
 
