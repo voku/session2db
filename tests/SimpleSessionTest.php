@@ -78,6 +78,19 @@ class SimpleSessionTest extends PHPUnit_Framework_TestCase
     self::assertSame(null, $_SESSION['null']);
   }
 
+  public function testBasic3WithDbCheck()
+  {
+    $data = $this->session2DB->read($this->session_id);
+    $_SESSION = unserialize($data);
+
+    self::assertSame(123, $_SESSION['test']);
+
+    $result = $this->db->select('session_data', array('hash' => $this->session2DB->get_fingerprint()));
+    $data = $result->fetchArray();
+    $sessionDataFromDb = unserialize($data['session_data']);
+    self::assertSame(123, $sessionDataFromDb['test']);
+  }
+
   public function testDestroy()
   {
     $sessionsCount1 = $this->session2DB->get_active_sessions();
@@ -89,7 +102,7 @@ class SimpleSessionTest extends PHPUnit_Framework_TestCase
     self::assertSame(0, count($_SESSION));
   }
 
-  public function testLall()
+  public function testFlashdata()
   {
     $this->session2DB->set_flashdata('test2', 'lall');
     self::assertSame('lall', $_SESSION['test2']);

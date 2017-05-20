@@ -3,44 +3,41 @@
 namespace voku\helper;
 
 use voku\db\DB;
+use voku\db\Result;
 
 /**
- *  A PHP library acting as a drop-in replacement for PHP's default session handler, but instead of storing session
- *  data
- *  in flat files it stores them in a database, providing both better performance and better security and
- *  protection against session fixation and session hijacking.
+ * A PHP library acting as a drop-in replacement for PHP's default session handler, but instead of storing session
+ * data in flat files it stores them in a database, providing both better performance and better security and
+ * protection against session fixation and session hijacking.
  *
- *  Session (Zebra_Session ) implements <i>session locking</i>. Session locking is a way to ensure that data is
- *  correctly handled in a scenario with multiple concurrent AJAX requests. Read more about it in this excellent
- *  article by Andy Bakun called {@link
- *  http://thwartedefforts.org/2006/11/11/race-conditions-with-ajax-and-php-sessions/ Race Conditions with Ajax and PHP
- *  Sessions}.
+ * Session (Zebra_Session) implements <i>session locking</i>. Session locking is a way to ensure that data is
+ * correctly handled in a scenario with multiple concurrent AJAX requests. Read more about it in this excellent
+ * article by Andy Bakun called {@link
+ * http://thwartedefforts.org/2006/11/11/race-conditions-with-ajax-and-php-sessions/ Race Conditions with Ajax and PHP
+ * Sessions}.
  *
- *  This library is also a solution for applications that are scaled across multiple web servers (using a
- *  load balancer or a round-robin DNS) and where the user's session data needs to be available. Storing sessions in a
- *  database makes them available to all of the servers!
+ * This library is also a solution for applications that are scaled across multiple web servers (using a
+ * load balancer or a round-robin DNS) and where the user's session data needs to be available. Storing sessions in a
+ * database makes them available to all of the servers!
  *
- *  Session (Zebra_Session ) supports "flashdata" - session variable which will only be available for the next server
- *  request, and which will be automatically deleted afterwards. Typically used for informational or status messages
- *  (for example:
- *  "data has been successfully updated").
+ * Session (Zebra_Session ) supports "flashdata" - session variable which will only be available for the next server
+ * request, and which will be automatically deleted afterwards. Typically used for informational or status messages
+ * (for example: "data has been successfully updated").
  *
- *  This is a fork of "Zebra_Session " and that was inspired by John Herren's code from
- *  the {@link http://devzone.zend.com/413/trick-out-your-session-handler/ Trick out your session handler}
- *  article and {@link http://shiflett.org/articles/the-truth-about-sessions Chris Shiflett}'s articles about PHP
- *  sessions.
+ * This is a fork of "Zebra_Session " and that was inspired by John Herren's code from
+ * the {@link http://devzone.zend.com/413/trick-out-your-session-handler/ Trick out your session handler}
+ * article and {@link http://shiflett.org/articles/the-truth-about-sessions Chris Shiflett}'s articles about PHP
+ * sessions.
  *
- *  Visit {@link http://stefangabos.ro/php-libraries/zebra-session/} for more information.
+ * Visit {@link http://stefangabos.ro/php-libraries/zebra-session/} for more information.
  *
- *
- * @author     Stefan Gabos <contact@stefangabos.ro>
- * @autor      Lars Moelleken <lars@moelleken.org>
- * @license    http://www.gnu.org/licenses/lgpl-3.0.txt GNU LESSER GENERAL PUBLIC LICENSE
- * @package    voku\helper
+ * @author  Stefan Gabos <contact@stefangabos.ro>
+ * @author  Lars Moelleken <lars@moelleken.org>
+ * @license http://www.gnu.org/licenses/lgpl-3.0.txt GNU LESSER GENERAL PUBLIC LICENSE
+ * @package voku\helper
  */
-class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
+class Session2DB implements \SessionHandlerInterface
 {
-
   /**
    * the name for the session variable that will be created upon script execution
    * and destroyed when instantiating this library, and which will hold information
@@ -66,11 +63,6 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
   private $session_lifetime;
 
   /**
-   * @var string
-   */
-  private $look_name;
-
-  /**
    * @var int
    */
   private $lock_timeout;
@@ -91,40 +83,55 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
   private $table_name;
 
   /**
-   *  Constructor of class. Initializes the class and automatically calls
-   *  {@link http://php.net/manual/en/function.session-start.php start_session()}.
+   * @var string
+   */
+  private $security_code;
+
+  /**
+   * @var string
+   */
+  private $_fingerprint;
+
+  /**
+   * @var string
+   */
+  private $_session_id;
+
+  /**
+   * Constructor of class. Initializes the class and automatically calls
+   * {@link http://php.net/manual/en/function.session-start.php start_session()}.
    *
-   *  <code>
-   *  // first, connect to a database containing the sessions table
+   * <code>
+   * // first, connect to a database containing the sessions table
    *
-   *  //  include the class (use the composer-"autoloader")
-   *  require 'vendor/autoload.php';
+   * // include the class (use the composer-"autoloader")
+   * require 'vendor/autoload.php';
    *
-   *  //  start the session
-   *  $session = new Session2DB();
-   *  </code>
+   * // start the session
+   * $session = new Session2DB();
+   * </code>
    *
-   *  By default, the cookie used by PHP to propagate session data across multiple pages ('PHPSESSID') uses the
-   *  current top-level domain and subdomain in the cookie declaration.
+   * By default, the cookie used by PHP to propagate session data across multiple pages ('PHPSESSID') uses the
+   * current top-level domain and subdomain in the cookie declaration.
    *
-   *  Example: www.domain.com
+   * Example: www.domain.com
    *
-   *  This means that the session data is not available to other subdomains. Therefore, a session started on
-   *  www.domain.com will not be available on blog.domain.com. The solution is to change the domain PHP uses when it
-   *  sets the 'PHPSESSID' cookie by calling the line below *before* instantiating the Session library.
+   * This means that the session data is not available to other subdomains. Therefore, a session started on
+   * www.domain.com will not be available on blog.domain.com. The solution is to change the domain PHP uses when it
+   * sets the 'PHPSESSID' cookie by calling the line below *before* instantiating the Session library.
    *
-   *  <code>
-   *  // takes the domain and removes the subdomain
-   *  // blog.domain.com becoming .domain.com
-   *  ini_set(
-   *      'session.cookie_domain',
-   *      substr($_SERVER['SERVER_NAME'], strpos($_SERVER['SERVER_NAME'], '.'))
-   *  );
-   *  </code>
+   * <code>
+   * // takes the domain and removes the subdomain
+   * // blog.domain.com becoming .domain.com
+   * ini_set(
+   *   'session.cookie_domain',
+   *    substr($_SERVER['SERVER_NAME'], strpos($_SERVER['SERVER_NAME'], '.'))
+   * );
+   * </code>
    *
-   *  From now on whenever PHP sets the 'PHPSESSID' cookie, the cookie will be available to all subdomains!
+   * From now on whenever PHP sets the 'PHPSESSID' cookie, the cookie will be available to all subdomains!
    *
-   * @param string     $security_code         (Optional) The value of this argument is appended to the string created
+   * @param string     $security_code         [Optional] The value of this argument is appended to the string created
    *                                          by
    *                                          concatenating the user's User Agent (browser) string (or an empty string
    *                                          if "lock_to_user_agent" is FALSE) and to the user's IP address (or an
@@ -143,7 +150,7 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    *                                          https://www.random.org/passwords/?num=1&len=12&format=html&rnd=new this}
    *                                          link to generate such a random string.</samp>
    *
-   * @param  int|mixed $session_lifetime      (Optional) The number of seconds after which a session will be considered
+   * @param  int|mixed $session_lifetime      [Optional] The number of seconds after which a session will be considered
    *                                          as <i>expired</i>.
    *
    *                                          Expired sessions are cleaned up from the database whenever the <i>garbage
@@ -172,7 +179,7 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    *
    *                                          Pass an empty string to keep default value.
    *
-   * @param boolean    $lock_to_user_agent    (Optional) Whether to restrict the session to the same User Agent (or
+   * @param boolean    $lock_to_user_agent    [Optional] Whether to restrict the session to the same User Agent (or
    *                                          browser) as when the session was first opened.
    *
    *                                          <i>The user agent check only adds minor security, since an attacker that
@@ -195,7 +202,7 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    *
    *                                          Default is TRUE.
    *
-   * @param boolean    $lock_to_ip            (Optional)    Whether to restrict the session to the same IP as when the
+   * @param boolean    $lock_to_ip            [Optional]    Whether to restrict the session to the same IP as when the
    *                                          session was first opened.
    *
    *                                          Use this with caution as many users have dynamic IP addresses which may
@@ -206,7 +213,7 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    *
    *                                          Default is FALSE.
    *
-   * @param int        $gc_probability        (Optional)    Used in conjunction with <i>$gc_divisor</i>. It defines the
+   * @param int        $gc_probability        [Optional]    Used in conjunction with <i>$gc_divisor</i>. It defines the
    *                                          probability that the <i>garbage collection routine</i> is started.
    *
    *                                          The probability is expressed by the formula:
@@ -230,7 +237,7 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    *
    *                                          Pass an empty string to keep default value.
    *
-   * @param int        $gc_divisor            (Optional)        Used in conjunction with <i>$gc_probability</i>. It
+   * @param int        $gc_divisor            [Optional]        Used in conjunction with <i>$gc_probability</i>. It
    *                                          defines the probability that the <i>garbage collection routine</i> is
    *                                          started.
    *
@@ -255,11 +262,11 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    *
    *                                          Pass an empty string to keep default value.
    *
-   * @param string     $table_name            (Optional)     Name of the DB table used by the class.
+   * @param string     $table_name            [Optional]     Name of the DB table used by the class.
    *
    *                                          Default is <i>session_data</i>.
    *
-   * @param int        $lock_timeout          (Optional)      The maximum amount of time (in seconds) for which a lock
+   * @param int        $lock_timeout          [Optional]      The maximum amount of time (in seconds) for which a lock
    *                                          on the session data can be kept.
    *
    *                                          <i>This must be lower than the maximum execution time of the script!</i>
@@ -273,8 +280,7 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    *
    *                                          Default is <i>60</i>
    *
-   * @param DB|null    $db                    (Optional)      A database instance from voku\db\DB ("voku/simple-mysqli")
-   *
+   * @param DB|null    $db                    [Optional] A database instance from voku\db\DB ("voku/simple-mysqli")
    */
   public function __construct($security_code = '', $session_lifetime = '', $lock_to_user_agent = true, $lock_to_ip = false, $gc_probability = 1, $gc_divisor = 1000, $table_name = 'session_data', $lock_timeout = 60, DB $db = null)
   {
@@ -286,7 +292,12 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
 
     // Prevent session-fixation
     // See: http://en.wikipedia.org/wiki/Session_fixation
+    //
+    // Tell the browser not to expose the cookie to client side scripting,
+    // this makes it harder for an attacker to hijack the session ID.
     ini_set('session.cookie_httponly', 1);
+
+    // Make sure that PHP only uses cookies for sessions and disallow session ID passing as a GET parameter,
     ini_set('session.session.use_only_cookies', 1);
 
     // PHP 7.1 Incompatible Changes
@@ -295,7 +306,9 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
       // Use the SHA-1 hashing algorithm
       ini_set('session.hash_function', 1);
 
-      // Increase character-range of the session ID to help prevent brute-force attacks
+      // Increase character-range of the session ID to help prevent brute-force attacks.
+      //
+      // INFO: The possible values are '4' (0-9, a-f), '5' (0-9, a-v), and '6' (0-9, a-z, A-Z, "-", ",").
       ini_set('session.hash_bits_per_character', 6);
     }
 
@@ -304,133 +317,179 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
       $security_code = 'sEcUrmenadwork_))';
     }
 
-    // continue if there is an active DB connection
-    if ($this->db->ping()) {
-
-      // make sure session cookies never expire so that session lifetime
-      // will depend only on the value of $session_lifetime
-      ini_set('session.cookie_lifetime', 0);
-
-      // if $session_lifetime is specified and is an integer number
-      if ($session_lifetime !== '' && is_int($session_lifetime)) {
-        ini_set('session.gc_maxlifetime', (int)$session_lifetime);
-      } else {
-        // fallback to 1h - 3600s
-        ini_set('session.gc_maxlifetime', 3600);
-      }
-
-      // if $gc_probability is specified and is an integer number
-      if ($gc_probability !== '' && is_int($gc_probability)) {
-        ini_set('session.gc_probability', $gc_probability);
-      }
-
-      // if $gc_divisor is specified and is an integer number
-      if ($gc_divisor !== '' && is_int($gc_divisor)) {
-        ini_set('session.gc_divisor', $gc_divisor);
-      }
-
-      // get session lifetime
-      $this->session_lifetime = ini_get('session.gc_maxlifetime');
-
-      // we'll use this later on in order to try to prevent HTTP_USER_AGENT spoofing
-      $this->security_code = $security_code;
-
-      // some other defaults
-      $this->lock_to_user_agent = $lock_to_user_agent;
-      $this->lock_to_ip = $lock_to_ip;
-
-      // the table to be used by the class
-      $this->table_name = $this->db->quote_string($table_name);
-
-      // the maximum amount of time (in seconds) for which a process can lock the session
-      $this->lock_timeout = $lock_timeout;
-
-      // register the new handler
-      session_set_save_handler(
-          array(
-              &$this,
-              'open',
-          ),
-          array(
-              &$this,
-              'close',
-          ),
-          array(
-              &$this,
-              'read',
-          ),
-          array(
-              &$this,
-              'write',
-          ),
-          array(
-              &$this,
-              'destroy',
-          ),
-          array(
-              &$this,
-              'gc',
-          )
-      );
-
-      // start the session
-      if (PHP_SAPI !== 'cli') {
-        session_start();
-      }
-
-      // running from the cli doesn't set $_SESSION
-      if (!isset($_SESSION)) {
-        $_SESSION = array();
-      }
-
-      // assume no flashdata
-      $this->flashdata = array();
-
-      // if there are any flashdata variables that need to be handled
-      if (isset($_SESSION[self::flashDataVarName])) {
-
-        // store them
-        $this->flashdata = unserialize($_SESSION[self::flashDataVarName]);
-
-        // and destroy the temporary session variable
-        unset($_SESSION[self::flashDataVarName]);
-      }
-
-      // handle flashdata after script execution
-      register_shutdown_function(
-          array(
-              $this,
-              '_manage_flashdata',
-          )
-      );
-
-      // if no DB connections could be found
-      // trigger a fatal error message and stop execution
-    } else {
+    // If no DB connections could be found, then
+    // trigger a fatal error message and stop execution.
+    if (!$this->db->ping()) {
       trigger_error('Session: No DB-Connection!', E_USER_ERROR);
     }
+
+    // make sure session cookies never expire so that session lifetime
+    // will depend only on the value of $session_lifetime
+    ini_set('session.cookie_lifetime', 0);
+
+    // if $session_lifetime is specified and is an integer number
+    if ($session_lifetime !== '' && is_int($session_lifetime)) {
+      ini_set('session.gc_maxlifetime', (int)$session_lifetime);
+    } else {
+      // fallback to 1h - 3600s
+      ini_set('session.gc_maxlifetime', 3600);
+    }
+
+    // if $gc_probability is specified and is an integer number
+    if ($gc_probability !== '' && is_int($gc_probability)) {
+      ini_set('session.gc_probability', $gc_probability);
+    }
+
+    // if $gc_divisor is specified and is an integer number
+    if ($gc_divisor !== '' && is_int($gc_divisor)) {
+      ini_set('session.gc_divisor', $gc_divisor);
+    }
+
+    // get session lifetime
+    $this->session_lifetime = ini_get('session.gc_maxlifetime');
+
+    // we'll use this later on in order to try to prevent HTTP_USER_AGENT spoofing
+    $this->security_code = $security_code;
+
+    // some other defaults
+    $this->lock_to_user_agent = $lock_to_user_agent;
+    $this->lock_to_ip = $lock_to_ip;
+
+    // the table to be used by the class
+    $this->table_name = $this->db->quote_string($table_name);
+
+    // the maximum amount of time (in seconds) for which a process can lock the session
+    $this->lock_timeout = $lock_timeout;
+
+    // generate the fingerprint from the user (user-agent + ip + ...)
+    $this->generate_fingerprint();
+
+    // register the new session-handler
+    $this->register_session_handler();
+
+    // start the session
+    if (PHP_SAPI === 'cli') {
+      $_SESSION = array();
+    } else {
+      \session_start();
+    }
+
+    // if there are any flashdata variables that need to be handled
+    if (isset($_SESSION[self::flashDataVarName])) {
+
+      // store them
+      $this->flashdata = unserialize($_SESSION[self::flashDataVarName]);
+
+      // and destroy the temporary session variable
+      unset($_SESSION[self::flashDataVarName]);
+    }
+
+    // handle flashdata after script execution
+    register_shutdown_function(
+        array(
+            $this,
+            '_manage_flashdata',
+        )
+    );
+  }
+
+  private function generate_fingerprint()
+  {
+    //  reads session data associated with a session id, but only if
+    //  -   the session ID exists;
+    //  -   the session has not expired;
+    //  -   if lock_to_user_agent is TRUE and the HTTP_USER_AGENT is the same as the one who had previously been associated with this particular session;
+    //  -   if lock_to_ip is TRUE and the host is the same as the one who had previously been associated with this particular session;
+    $hash = '';
+
+    // if we need to identify sessions by also checking the user agent
+    if ($this->lock_to_user_agent && isset($_SERVER['HTTP_USER_AGENT'])) {
+      $hash .= $_SERVER['HTTP_USER_AGENT'];
+    }
+
+    // if we need to identify sessions by also checking the host
+    if ($this->lock_to_ip && isset($_SERVER['REMOTE_ADDR'])) {
+      $hash .= $_SERVER['REMOTE_ADDR'];
+    }
+
+    // append this to the end
+    $hash .= $this->security_code;
+
+    // save the fingerprint-hash into the current object
+    $this->_fingerprint = md5($hash);
   }
 
   /**
-   *  Get the number of active sessions - sessions that have not expired.
+   * @return string
+   */
+  public function get_fingerprint()
+  {
+    return $this->_fingerprint;
+  }
+
+  /**
+   * @return bool
+   */
+  private function register_session_handler()
+  {
+    if (Bootup::is_php('5.4')) {
+      return \session_set_save_handler($this, true);
+    }
+
+    $results = \session_set_save_handler(
+        array(
+            &$this,
+            'open',
+        ),
+        array(
+            &$this,
+            'close',
+        ),
+        array(
+            &$this,
+            'read',
+        ),
+        array(
+            &$this,
+            'write',
+        ),
+        array(
+            &$this,
+            'destroy',
+        ),
+        array(
+            &$this,
+            'gc',
+        )
+    );
+
+    if (!$results) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Get the number of active sessions - sessions that have not expired.
    *
-   *  <i>The returned value does not represent the exact number of active users as some sessions may be unused
-   *  although they haven't expired.</i>
+   * <i>The returned value does not represent the exact number of active users as some sessions may be unused
+   * although they haven't expired.</i>
    *
-   *  <code>
-   *  // first, connect to a database containing the sessions table
+   * <code>
+   * // first, connect to a database containing the sessions table
    *
-   *  //  include the class (use the composer-"autoloader")
-   *  require 'vendor/autoload.php';
+   * //  include the class (use the composer-"autoloader")
+   * require 'vendor/autoload.php';
    *
-   *  //  start the session
-   *  $session = new Session2DB();
+   * //  start the session
+   * $session = new Session2DB();
    *
-   *  //  get the (approximate) number of active sessions
-   *  $active_sessions = $session->get_active_sessions();
-   *  </code>
+   * //  get the (approximate) number of active sessions
+   * $active_sessions = $session->get_active_sessions();
+   * </code>
    *
-   * @return integer     Returns the number of active (not expired) sessions.
+   * @return int <p>Returns the number of active (not expired) sessions.</p>
    */
   public function get_active_sessions()
   {
@@ -449,13 +508,14 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
   }
 
   /**
-   *  Custom gc() function (garbage collector)
+   * Custom gc() function (garbage collector).
    *
-   * @param int $maxlifetime must be set for the interface
+   * @param int $maxlifetime <p>INFO: must be set for the interface.</P>
    *
    * @return int
    */
-  public function gc(/* @noinspection PhpUnusedParameterInspection */ $maxlifetime)
+  public function gc(/* @noinspection PhpUnusedParameterInspection */
+      $maxlifetime)
   {
     $query = 'DELETE FROM ' . $this->table_name . "
       WHERE session_expire < '" . $this->db->escape(time()) . "'
@@ -466,36 +526,35 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
   }
 
   /**
-   *  Queries the system for the values of <i>session.gc_maxlifetime</i>, <i>session.gc_probability</i> and
-   *  <i>session.gc_divisor</i> and returns them as an associative array.
+   * Queries the system for the values of <i>session.gc_maxlifetime</i>, <i>session.gc_probability</i> and
+   * <i>session.gc_divisor</i> and returns them as an associative array.
    *
-   *  To view the result in a human-readable format use:
-   *  <code>
-   *  //  include the class (use the composer-"autoloader")
-   *  require 'vendor/autoload.php';
+   * To view the result in a human-readable format use:
+   * <code>
+   * //  include the class (use the composer-"autoloader")
+   * require 'vendor/autoload.php';
    *
-   *  //  start the session
-   *  $session = new Session2DB();
+   * //  start the session
+   * $session = new Session2DB();
    *
-   *  //  get default settings
-   *  print_r('<pre>');
-   *  print_r($session->get_settings());
+   * //  get default settings
+   * print_r('<pre>');
+   * print_r($session->get_settings());
    *
-   *  //  would output something similar to (depending on your actual settings)
-   *  //  Array
-   *  //  (
-   *  //      [session.gc_maxlifetime] => 1440 seconds (24 minutes)
-   *  //      [session.gc_probability] => 1
-   *  //      [session.gc_divisor] => 1000
-   *  //      [probability] => 0.1%
-   *  //  )
-   *  </code>
+   * //  would output something similar to (depending on your actual settings)
+   * //  array
+   * //  (
+   * //    [session.gc_maxlifetime] => 1440 seconds (24 minutes)
+   * //    [session.gc_probability] => 1
+   * //    [session.gc_divisor] => 1000
+   * //    [probability] => 0.1%
+   * //  )
+   * </code>
    *
-   * @since 1.0.0
-   *
-   * @return array   Returns the values of <i>session.gc_maxlifetime</i>, <i>session.gc_probability</i> and
-   *                 <i>session.gc_divisor</i> as an associative array.
-   *
+   * @return array <p>
+   *               Returns the values of <i>session.gc_maxlifetime</i>, <i>session.gc_probability</i> and
+   *               <i>session.gc_divisor</i> as an associative array.
+   *               </p>
    */
   public function get_settings()
   {
@@ -514,39 +573,39 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
   }
 
   /**
-   *  Sets a "flashdata" session variable which will only be available for the next server request, and which will be
-   *  automatically deleted afterwards.
+   * Sets a "flashdata" session variable which will only be available for the next server request, and which will be
+   * automatically deleted afterwards.
    *
-   *  Typically used for informational or status messages (for example: "data has been successfully updated").
+   * Typically used for informational or status messages (for example: "data has been successfully updated").
    *
-   *  <code>
-   *  // first, connect to a database containing the sessions table
+   * <code>
+   * // first, connect to a database containing the sessions table
    *
-   *  //  include the class (use the composer-"autoloader")
-   *  require 'vendor/autoload.php';
+   * //  include the class (use the composer-"autoloader")
+   * require 'vendor/autoload.php';
    *
-   *  //  start the session
-   *  $session = new Session2DB();
+   * //  start the session
+   * $session = new Session2DB();
    *
-   *  // set "myvar" which will only be available
-   *  // for the next server request and will be
-   *  // automatically deleted afterwards
-   *  $session->set_flashdata('myvar', 'myval');
-   *  </code>
+   * // set "myvar" which will only be available
+   * // for the next server request and will be
+   * // automatically deleted afterwards
+   * $session->set_flashdata('myvar', 'myval');
+   * </code>
    *
-   *  Flashdata session variables can be retrieved as any other session variable:
+   * Flashdata session variables can be retrieved as any other session variable:
    *
-   *  <code>
-   *  if (isset($_SESSION['myvar'])) {
-   *      // do something here but remember that the
-   *      // flashdata session variable is available
-   *      // for a single server request after it has
-   *      // been set!
-   *  }
-   *  </code>
+   * <code>
+   * if (isset($_SESSION['myvar'])) {
+   *   // do something here but remember that the
+   *   // flashdata session variable is available
+   *   // for a single server request after it has
+   *   // been set!
+   * }
+   * </code>
    *
-   * @param  string $name  The name of the session variable.
-   * @param  string $value The value of the session variable.
+   * @param string $name  <p>The name of the session variable.</p>
+   * @param string $value <p>The value of the session variable.</p>
    */
   public function set_flashdata($name, $value)
   {
@@ -558,58 +617,67 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
   }
 
   /**
-   *  Deletes all data related to the session
+   * Deletes all data related to the session
    *
-   *  <code>
-   *  // first, connect to a database containing the sessions table
+   * <code>
+   * // first, connect to a database containing the sessions table
    *
-   *  //  include the class (use the composer-"autoloader")
-   *  require 'vendor/autoload.php';
+   * // include the class (use the composer-"autoloader")
+   * require 'vendor/autoload.php';
    *
-   *  //  start the session
-   *  $session = new Session2DB();
+   * // start the session
+   * $session = new Session2DB();
    *
-   *  //  end current session
-   *  $session->stop();
-   *  </code>
-   *
+   * // end current session
+   * $session->stop();
+   * </code>
    */
   public function stop()
   {
-    $this->regenerate_id();
+    if (PHP_SAPI === 'cli') {
+      return;
+    }
 
-    session_unset();
-    session_destroy();
+    // if a cookie is used to pass the session id
+    if (ini_get('session.use_cookies')) {
+      // get session cookie's properties
+      $params = \session_get_cookie_params();
+
+      // unset the cookie
+      setcookie(\session_name(), '', time() - 42000, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
+    }
+
+    \session_unset();
+    \session_destroy();
   }
 
   /**
-   *  Regenerates the session id.
+   * Regenerates the session id.
    *
-   *  <b>Call this method whenever you do a privilege change in order to prevent session hijacking!</b>
+   * <b>Call this method whenever you do a privilege change in order to prevent session hijacking!</b>
    *
-   *  <code>
-   *  // first, connect to a database containing the sessions table
+   * <code>
+   * // first, connect to a database containing the sessions table
    *
-   *  //  include the class (use the composer-"autoloader")
-   *  require 'vendor/autoload.php';
+   * // include the class (use the composer-"autoloader")
+   * require 'vendor/autoload.php';
    *
-   *  //  start the session
-   *  $session = new Session2DB();
+   * // start the session
+   * $session = new Session2DB();
    *
-   *  //  regenerate the session's ID
-   *  $session->regenerate_id();
-   *  </code>
-   *
+   * // regenerate the session's ID
+   * $session->regenerate_id();
+   * </code>
    */
   public function regenerate_id()
   {
     // regenerates the id (create a new session with a new id and containing the data from the old session)
     // also, delete the old session
-    session_regenerate_id(true);
+    \session_regenerate_id(true);
   }
 
   /**
-   * Custom destroy() function
+   * Custom destroy() function.
    *
    * @param int $session_id
    *
@@ -632,37 +700,54 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
   }
 
   /**
-   * Custom close() function
+   * Custom close() function.
    *
    * @return bool
    */
   public function close()
   {
-    $query = "SELECT RELEASE_LOCK('" . $this->look_name . "')";
+    // 1. write all data into the db
+    \session_register_shutdown();
 
-    // release the lock associated with the current session
-    $this->db->query($query);
+    // 2. release the lock, if there is a lock
+    if ($this->_session_id) {
+      $this->_release_lock($this->_session_id);
+    }
 
+    // 3. close the db-connection
     $this->db->close();
 
     return true;
   }
 
   /**
-   *  Custom open() function
+   * Custom open() function.
    *
    * @param string $save_path
    * @param string $session_name
    *
    * @return true
    */
-  public function open(/* @noinspection PhpUnusedParameterInspection */ $save_path, $session_name)
+  public function open(/* @noinspection PhpUnusedParameterInspection */
+      $save_path, $session_name)
   {
+    // session_regenerate_id() --->
+    //
+    // PHP 5: call -> "destroy"
+    //
+    // PHP7: call -> "destroy", "read", "close", "open", "read"
+    //
+    // WARNING: PHP7 will reuse $this session-handler-object, so we need to reconnect to the database
+    //
+    if (!$this->db->ping()) {
+      $this->db->reconnect();
+    }
+
     return true;
   }
 
   /**
-   * Custom read() function
+   * Custom read() function.
    *
    * @param $session_id
    *
@@ -670,45 +755,25 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    */
   public function read($session_id)
   {
-    // get the lock name, associated with the current session
-    $this->look_name = $this->db->escape('session_' . $session_id);
-
-    $query_lock = "SELECT GET_LOCK('" . $this->look_name . "', " . $this->db->escape($this->lock_timeout) . ')';
+    // Needed by write() to detect session_regenerate_id() calls
+    $this->_session_id = $session_id;
 
     // try to obtain a lock with the given name and timeout
-    $result_lock = $this->db->query($query_lock);
+    $locked = $this->_get_lock($session_id);
 
     // if there was an error, then stop the execution
-    if (!is_object($result_lock) || $result_lock->num_rows !== 1) {
-      die('Session: Could not obtain session lock!');
+    if ($locked === false) {
+      trigger_error('Session: Could not obtain session lock!', E_USER_ERROR);
     }
 
-    //  reads session data associated with a session id, but only if
-    //  -   the session ID exists;
-    //  -   the session has not expired;
-    //  -   if lock_to_user_agent is TRUE and the HTTP_USER_AGENT is the same as the one who had previously been associated with this particular session;
-    //  -   if lock_to_ip is TRUE and the host is the same as the one who had previously been associated with this particular session;
-    $hash = '';
-
-    // if we need to identify sessions by also checking the user agent
-    if ($this->lock_to_user_agent && isset($_SERVER['HTTP_USER_AGENT'])) {
-      $hash .= $_SERVER['HTTP_USER_AGENT'];
-    }
-
-    // if we need to identify sessions by also checking the host
-    if ($this->lock_to_ip && isset($_SERVER['REMOTE_ADDR'])) {
-      $hash .= $_SERVER['REMOTE_ADDR'];
-    }
-
-    // append this to the end
-    $hash .= $this->security_code;
+    $hash = $this->get_fingerprint();
 
     $query = 'SELECT
         session_data
       FROM
         ' . $this->table_name . "
       WHERE session_id = '" . $this->db->escape($session_id) . "'
-      AND hash = '" . $this->db->escape(md5($hash)) . "'
+      AND hash = '" . $this->db->escape($hash) . "'
       AND session_expire > '" . $this->db->escape(time()) . "'
       LIMIT 1
     ";
@@ -725,14 +790,66 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
       return $fields['session_data'];
     }
 
-    $this->regenerate_id();
-
     // on error return an empty string - this HAS to be an empty string
     return '';
   }
 
   /**
-   *  Custom write() function
+   * @param string $session_id
+   *
+   * @return string
+   */
+  private function _lock_name($session_id)
+  {
+    return $this->db->escape('session_' . $session_id);
+  }
+
+  /**
+   * @param string $session_id
+   *
+   * @return bool
+   */
+  private function _release_lock($session_id)
+  {
+    // get the lock name, associated with the current session
+    $look_name = $this->_lock_name($session_id);
+
+    // release the lock associated with the current session
+    $query = "SELECT RELEASE_LOCK('" . $look_name . "')";
+    $result_lock = $this->db->query($query);
+
+    // if there was an error, then stop the execution
+    if (!$result_lock instanceof Result || $result_lock->num_rows !== 1) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * @param string $session_id
+   *
+   * @return bool
+   */
+  private function _get_lock($session_id)
+  {
+    // get the lock name, associated with the current session
+    $look_name = $this->_lock_name($session_id);
+
+    // try to obtain a lock with the given name and timeout
+    $query_lock = "SELECT GET_LOCK('" . $look_name . "', " . $this->db->escape($this->lock_timeout) . ')';
+    $result_lock = $this->db->query($query_lock);
+
+    // if there was an error, then stop the execution
+    if (!$result_lock instanceof Result || $result_lock->num_rows !== 1) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Custom write() function.
    *
    * @param string $session_id
    * @param string $session_data
@@ -741,9 +858,25 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
    */
   public function write($session_id, $session_data)
   {
-    $hash = md5(($this->lock_to_user_agent && isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '') . ($this->lock_to_ip && isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '') . $this->security_code);
+    // Was the "$session_id" regenerated?
+    if (
+        $this->_session_id
+        &&
+        $session_id !== $this->_session_id
+    ) {
+      if (
+          $this->_release_lock($this->_session_id) === false
+          ||
+          $this->_get_lock($session_id) === false
+      ) {
+        return false;
+      }
 
-    /* @noinspection PhpWrongStringConcatenationInspection */
+      $this->_session_id = $session_id;
+    }
+
+    $hash = $this->get_fingerprint();
+
     $query = 'INSERT INTO
       ' . $this->table_name . "
       (
@@ -775,7 +908,7 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
   }
 
   /**
-   *  Manages flashdata behind the scenes
+   * Manages flashdata behind the scenes.
    *
    * @access private
    */
