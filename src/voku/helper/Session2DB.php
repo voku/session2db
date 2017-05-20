@@ -514,8 +514,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return int
    */
-  public function gc(/* @noinspection PhpUnusedParameterInspection */
-      $maxlifetime)
+  public function gc(/* @noinspection PhpUnusedParameterInspection */ $maxlifetime)
   {
     $query = 'DELETE FROM ' . $this->table_name . "
       WHERE session_expire < '" . $this->db->escape(time()) . "'
@@ -728,8 +727,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return true
    */
-  public function open(/* @noinspection PhpUnusedParameterInspection */
-      $save_path, $session_name)
+  public function open(/* @noinspection PhpUnusedParameterInspection */ $save_path, $session_name)
   {
     // session_regenerate_id() --->
     //
