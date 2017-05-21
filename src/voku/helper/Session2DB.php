@@ -731,7 +731,7 @@ class Session2DB implements \SessionHandlerInterface
   {
     // session_regenerate_id() --->
     //
-    // PHP 5: call -> "destroy"
+    // PHP5: call -> "destroy"
     //
     // PHP7: call -> "destroy", "read", "close", "open", "read"
     //
