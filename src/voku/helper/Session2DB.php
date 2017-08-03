@@ -135,7 +135,7 @@ class Session2DB implements \SessionHandlerInterface
    *                                          by
    *                                          concatenating the user's User Agent (browser) string (or an empty string
    *                                          if "lock_to_user_agent" is FALSE) and to the user's IP address (or an
-   *                                          empty string if "lock_to_ip" is FALSE), before creating an MD5 hash out
+   *                                          empty string if "lock_to_ip" is FALSE), before creating an SHA1 hash out
    *                                          of it and storing it in the database.
    *
    *                                          On each call this value will be generated again and compared to the
@@ -200,7 +200,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    *                                          So, if the situation asks for this, change this value to FALSE.
    *
-   *                                          Default is TRUE.
+   *                                          Default is FALSE.
    *
    * @param boolean    $lock_to_ip            [Optional]    Whether to restrict the session to the same IP as when the
    *                                          session was first opened.
@@ -282,7 +282,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @param DB|null    $db                    [Optional] A database instance from voku\db\DB ("voku/simple-mysqli")
    */
-  public function __construct($security_code = '', $session_lifetime = '', $lock_to_user_agent = true, $lock_to_ip = false, $gc_probability = 1, $gc_divisor = 1000, $table_name = 'session_data', $lock_timeout = 60, DB $db = null)
+  public function __construct($security_code = '', $session_lifetime = '', $lock_to_user_agent = false, $lock_to_ip = false, $gc_probability = 1, $gc_divisor = 1000, $table_name = 'session_data', $lock_timeout = 60, DB $db = null)
   {
     if (null !== $db) {
       $this->db = $db;
@@ -416,7 +416,7 @@ class Session2DB implements \SessionHandlerInterface
     $hash .= $this->security_code;
 
     // save the fingerprint-hash into the current object
-    $this->_fingerprint = md5($hash);
+    $this->_fingerprint = sha1($hash);
   }
 
   /**
@@ -799,7 +799,9 @@ class Session2DB implements \SessionHandlerInterface
    */
   private function _lock_name($session_id)
   {
-    return $this->db->escape('session_' . $session_id);
+    // MySQL >=5.7.5 | the new GET_LOCK implementation has a limit on the identifier name
+    // -> https://bugs.mysql.com/bug.php?id=80721
+    return $this->db->escape('session_' . sha1($session_id));
   }
 
   /**
