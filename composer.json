@@ -41,10 +41,5 @@
     "psr-4": {
       "voku\\helper\\": "src/voku/helper/"
     }
-  },
-  "extra": {
-    "branch-alias": {
-      "dev-master": "1.0.x-dev"
-    }
   }
 }
