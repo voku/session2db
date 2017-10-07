@@ -392,7 +392,7 @@ class Session2DB implements \SessionHandlerInterface
    */
   private function overwriteIniSettings($session_lifetime, $gc_probability, $gc_divisor)
   {
-    // PHP 7.2 throws a warnings for "session"-ini, so we catch it here ...
+    // WARNING: PHP 7.2 throws a warning for "session"-ini, so we catch it here ...
     if (
         PHP_SAPI !== 'cli'
         &&
@@ -460,11 +460,22 @@ class Session2DB implements \SessionHandlerInterface
    */
   private function register_session_handler()
   {
-    if (Bootup::is_php('5.4')) {
-      return \session_set_save_handler($this, true);
+    // WARNING: PHP 7.2 throws a warning for "session"-ini, so we catch it here ...
+    if (
+        PHP_SAPI !== 'cli'
+        &&
+        headers_sent() === true
+    ) {
+      trigger_error('Cannot change save handler when headers already sent', E_USER_WARNING);
     }
 
-    $results = \session_set_save_handler(
+    if (Bootup::is_php('5.4')) {
+      /** @noinspection PhpUsageOfSilenceOperatorInspection */
+      return @\session_set_save_handler($this, true);
+    }
+
+    /** @noinspection PhpUsageOfSilenceOperatorInspection */
+    $results = @\session_set_save_handler(
         array(
             &$this,
             'open',
@@ -763,7 +774,7 @@ class Session2DB implements \SessionHandlerInterface
     //
     // PHP7: call -> "destroy", "read", "close", "open", "read"
     //
-    // WARNING: PHP7 will reuse $this session-handler-object, so we need to reconnect to the database
+    // WARNING: PHP >= 7.0 will reuse $this session-handler-object, so we need to reconnect to the database
     //
     if (!$this->db->ping()) {
       $this->db->reconnect();
