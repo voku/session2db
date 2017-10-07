@@ -290,26 +290,10 @@ class Session2DB implements \SessionHandlerInterface
       $this->db = DB::getInstance();
     }
 
-    // Prevent session-fixation
-    // See: http://en.wikipedia.org/wiki/Session_fixation
-    //
-    // Tell the browser not to expose the cookie to client side scripting,
-    // this makes it harder for an attacker to hijack the session ID.
-    ini_set('session.cookie_httponly', 1);
-
-    // Make sure that PHP only uses cookies for sessions and disallow session ID passing as a GET parameter,
-    ini_set('session.session.use_only_cookies', 1);
-
-    // PHP 7.1 Incompatible Changes
-    // -> http://php.net/manual/en/migration71.incompatible.php
-    if (Bootup::is_php('7.1') === false) {
-      // Use the SHA-1 hashing algorithm
-      ini_set('session.hash_function', 1);
-
-      // Increase character-range of the session ID to help prevent brute-force attacks.
-      //
-      // INFO: The possible values are '4' (0-9, a-f), '5' (0-9, a-v), and '6' (0-9, a-z, A-Z, "-", ",").
-      ini_set('session.hash_bits_per_character', 6);
+    // If no DB connections could be found, then
+    // trigger a fatal error message and stop execution.
+    if (!$this->db->ping()) {
+      trigger_error('Session: No DB-Connection!', E_USER_ERROR);
     }
 
     // fallback for the security-code
@@ -317,33 +301,7 @@ class Session2DB implements \SessionHandlerInterface
       $security_code = 'sEcUrmenadwork_))';
     }
 
-    // If no DB connections could be found, then
-    // trigger a fatal error message and stop execution.
-    if (!$this->db->ping()) {
-      trigger_error('Session: No DB-Connection!', E_USER_ERROR);
-    }
-
-    // make sure session cookies never expire so that session lifetime
-    // will depend only on the value of $session_lifetime
-    ini_set('session.cookie_lifetime', 0);
-
-    // if $session_lifetime is specified and is an integer number
-    if ($session_lifetime !== '' && is_int($session_lifetime)) {
-      ini_set('session.gc_maxlifetime', (int)$session_lifetime);
-    } else {
-      // fallback to 1h - 3600s
-      ini_set('session.gc_maxlifetime', 3600);
-    }
-
-    // if $gc_probability is specified and is an integer number
-    if ($gc_probability !== '' && is_int($gc_probability)) {
-      ini_set('session.gc_probability', $gc_probability);
-    }
-
-    // if $gc_divisor is specified and is an integer number
-    if ($gc_divisor !== '' && is_int($gc_divisor)) {
-      ini_set('session.gc_divisor', $gc_divisor);
-    }
+    $this->overwriteIniSettings($session_lifetime, $gc_probability, $gc_divisor);
 
     // get session lifetime
     $this->session_lifetime = ini_get('session.gc_maxlifetime');
@@ -425,6 +383,76 @@ class Session2DB implements \SessionHandlerInterface
   public function get_fingerprint()
   {
     return $this->_fingerprint;
+  }
+
+  /**
+   * @param int $session_lifetime
+   * @param int $gc_probability
+   * @param int $gc_divisor
+   */
+  private function overwriteIniSettings($session_lifetime, $gc_probability, $gc_divisor)
+  {
+    // PHP 7.2 throws a warnings for "session"-ini, so we catch it here ...
+    if (
+        PHP_SAPI !== 'cli'
+        &&
+        headers_sent() === true
+    ) {
+      trigger_error('You cannot change the session module\'s ini settings at this time', E_USER_WARNING);
+    }
+
+    // Prevent session-fixation
+    // See: http://en.wikipedia.org/wiki/Session_fixation
+    //
+    // Tell the browser not to expose the cookie to client side scripting,
+    // this makes it harder for an attacker to hijack the session ID.
+    /** @noinspection PhpUsageOfSilenceOperatorInspection */
+    @ini_set('session.cookie_httponly', 1);
+
+    // Make sure that PHP only uses cookies for sessions and disallow session ID passing as a GET parameter,
+    /** @noinspection PhpUsageOfSilenceOperatorInspection */
+    @ini_set('session.session.use_only_cookies', 1);
+
+    // PHP 7.1 Incompatible Changes
+    // -> http://php.net/manual/en/migration71.incompatible.php
+    if (Bootup::is_php('7.1') === false) {
+      // Use the SHA-1 hashing algorithm
+      /** @noinspection PhpUsageOfSilenceOperatorInspection */
+      @ini_set('session.hash_function', 1);
+
+      // Increase character-range of the session ID to help prevent brute-force attacks.
+      //
+      // INFO: The possible values are '4' (0-9, a-f), '5' (0-9, a-v), and '6' (0-9, a-z, A-Z, "-", ",").
+      /** @noinspection PhpUsageOfSilenceOperatorInspection */
+      @ini_set('session.hash_bits_per_character', 6);
+    }
+
+    // make sure session cookies never expire so that session lifetime
+    // will depend only on the value of $session_lifetime
+    /** @noinspection PhpUsageOfSilenceOperatorInspection */
+    @ini_set('session.cookie_lifetime', 0);
+
+    // if $session_lifetime is specified and is an integer number
+    if ($session_lifetime !== '' && is_int($session_lifetime)) {
+      /** @noinspection PhpUsageOfSilenceOperatorInspection */
+      @ini_set('session.gc_maxlifetime', (int)$session_lifetime);
+    } else {
+      // fallback to 1h - 3600s
+      /** @noinspection PhpUsageOfSilenceOperatorInspection */
+      @ini_set('session.gc_maxlifetime', 3600);
+    }
+
+    // if $gc_probability is specified and is an integer number
+    if ($gc_probability !== '' && is_int($gc_probability)) {
+      /** @noinspection PhpUsageOfSilenceOperatorInspection */
+      @ini_set('session.gc_probability', $gc_probability);
+    }
+
+    // if $gc_divisor is specified and is an integer number
+    if ($gc_divisor !== '' && is_int($gc_divisor)) {
+      /** @noinspection PhpUsageOfSilenceOperatorInspection */
+      @ini_set('session.gc_divisor', $gc_divisor);
+    }
   }
 
   /**
