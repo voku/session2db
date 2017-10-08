@@ -1,6 +1,7 @@
 <?php
 
 use voku\db\DB;
+use voku\helper\Bootup;
 use voku\helper\Session2DB;
 
 # running from the cli doesn't set $_SESSION
@@ -41,7 +42,12 @@ class SimpleSessionTest extends PHPUnit_Framework_TestCase
   {
     $settings = $this->session2DB->get_settings();
 
-    self::assertSame('3600 seconds (60 minutes)', $settings['session.gc_maxlifetime']);
+    if (Bootup::is_php('7.2')) { // TODO?
+      self::assertSame('1440 seconds (24 minutes)', $settings['session.gc_maxlifetime']);
+    } else {
+      self::assertSame('3600 seconds (60 minutes)', $settings['session.gc_maxlifetime']);
+    }
+
     self::assertSame('1', $settings['session.gc_probability']);
     self::assertSame('1000', $settings['session.gc_divisor']);
     self::assertContains('0.1', $settings['probability']);
