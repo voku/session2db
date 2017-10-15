@@ -21,27 +21,13 @@ It is also a solution for applications that are scaled across multiple web serve
 
 The library supports "flashdata" - session variable which will only be available for the next server request, and which will be automatically deleted afterwards. Typically used for informational or status messages (for example: "data has been successfully updated").
 
-Session2DB is was inspired by John Herren's code from the [Trick out your session handler](http://devzone.zend.com/413/trick-out-your-session-handler/) article and [Chris Shiflett](http://shiflett.org/articles/the-truth-about-sessions)'s articles about PHP sessions.
+Session2DB is was inspired by John Herren's code from the [Trick out your session handler](http://devzone.zend.com/413/trick-out-your-session-handler/) article and [Chris Shiflett](http://shiflett.org/articles/the-truth-about-sessions)'s articles about PHP sessions and based on [Zebra_Session](https://github.com/stefangabos/Zebra_Session). 
 
 The code is heavily commented and generates no warnings/errors/notices when PHP's error reporting level is set to E_ALL.
 
-## Features
-
-- acts as a wrapper for PHP’s default session handling functions, but instead of storing session data in flat files it stores them in a database, providing better security and better performance
-
-- it is a drop-in and seamingless replacement for PHP’s default session handler: PHP sessions will be used in the same way as prior to using the library; you don’t need to change any existing code!
-
-- implements *row locks*, ensuring that data is correctly handled in scenarios with multiple concurrent AJAX requests
-
-- because session data is stored in a database, the library represents a solution for applications that are scaled across multiple web servers (using a load balancer or a round-robin DNS)
-
-- has comprehensive documentation
-
-- the code is heavily commented and generates no warnings/errors/notices when PHP’s error reporting level is set to E_ALL
-
 ## Requirements
 
-PHP 5.x or 7.x with the **mysqli extension** activated, MySQL 4.1.22+
+PHP 5.x or 7.x with the **mysqli extension** activated, MySQL 4.1.22+ (recommanded: **mysqlnd extension**)
 
 ## How to install
 
@@ -56,6 +42,27 @@ After installing, you will need to initialise the database table from the *insta
 *Note that this class assumes that there is an active connection to a MySQL database and it does not attempt to create one!
 
 ```php
+//
+// simple (dirty) example
+//
+
+<?php
+    use voku\db\DB;
+    use voku\helper\Session2DB;
+    
+    DB::getInstance('hostname', 'username', 'password', 'database');
+    new Session2DB();
+    
+    // from now on, use sessions as you would normally
+    // this is why it is called a "drop-in replacement" :)
+    $_SESSION['foo'] = 'bar';
+```
+
+```php
+//
+// extended example
+//
+
 <?php
     use voku\db\DB;
     use voku\helper\DbWrapper4Session;
@@ -64,6 +71,7 @@ After installing, you will need to initialise the database table from the *insta
     // include autoloader
     require_once 'composer/autoload.php';
 
+    // initialize the database connection e.g. via "voku\db\DB"-class
     $db = DB::getInstance(
         'hostname', // e.g. localhost
         'username', // e.g. user_1
@@ -80,11 +88,22 @@ After installing, you will need to initialise the database table from the *insta
         )
     );
     
-    // you can also use you own mysqli implementation via the "Db4Session"-interface,
+    // you can also use you own database implementation via the "Db4Session"-interface,
     // take a look at the "DbWrapper4Session"-class for a example
     $dbWrapper = new DbWrapper4Session($db);
     
-    $session = new Session2DB($dbWrapper);
+    // initialize "Session to DB"
+    new Session2DB(
+      'add_your_own_security_code_here', // security_code
+      '',                                // session_lifetime
+      false,                             // lock_to_user_agent 
+      false,                             // lock_to_ip
+      1,                                 // gc_probability 
+      1000,                              // gc_divisor 
+      'session_data',                    // table_name
+      60,                                // lock_timeout 
+      $dbWrapper                         // db (must implement the "Db4Session"-interface)
+    );
 
     // from now on, use sessions as you would normally
     // this is why it is called a "drop-in replacement" :)
