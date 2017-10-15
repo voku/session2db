@@ -41,7 +41,7 @@ The code is heavily commented and generates no warnings/errors/notices when PHP'
 
 ## Requirements
 
-PHP 5+ with the **mysqli extension** activated, MySQL 4.1.22+
+PHP 5.x or 7.x with the **mysqli extension** activated, MySQL 4.1.22+
 
 ## How to install
 
@@ -58,17 +58,33 @@ After installing, you will need to initialise the database table from the *insta
 ```php
 <?php
     use voku\db\DB;
+    use voku\helper\DbWrapper4Session;
     use voku\helper\Session2DB;
 
     // include autoloader
     require_once 'composer/autoload.php';
 
-    $db = DB::getInstance('yourDbHost', 'yourDbUser', 'yourDbPassword', 'yourDbName');
-
-    // example
-    // $db = DB::getInstance('localhost', 'root', '', 'test');
+    $db = DB::getInstance(
+        'hostname', // e.g. localhost
+        'username', // e.g. user_1
+        'password', // e.g. ******
+        'database', // e.g. db_1
+        'port',     // e.g. 3306
+        'charset',  // e.g. utf8mb4
+        true,       // e.g. true|false (exit_on_error)
+        true,       // e.g. true|false (echo_on_error)
+        '',         // e.g. 'framework\Logger' (logger_class_name)
+        '',         // e.g. 'DEBUG' (logger_level)
+        array(
+            'session_to_db' => true,
+        )
+    );
     
-    $session = new Session2DB();
+    // you can also use you own mysqli implementation via the "Db4Session"-interface,
+    // take a look at the "DbWrapper4Session"-class for a example
+    $dbWrapper = new DbWrapper4Session($db);
+    
+    $session = new Session2DB($dbWrapper);
 
     // from now on, use sessions as you would normally
     // this is why it is called a "drop-in replacement" :)

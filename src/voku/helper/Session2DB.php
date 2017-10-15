@@ -2,9 +2,6 @@
 
 namespace voku\helper;
 
-use voku\db\DB;
-use voku\db\Result;
-
 /**
  * A PHP library acting as a drop-in replacement for PHP's default session handler, but instead of storing session
  * data in flat files it stores them in a database, providing both better performance and better security and
@@ -48,7 +45,7 @@ class Session2DB implements \SessionHandlerInterface
   const flashDataVarName = '_menadwork_session_flashdata_ec3asbuiad';
 
   /**
-   * @var DB
+   * @var Db4Session
    */
   private $db;
 
@@ -280,14 +277,14 @@ class Session2DB implements \SessionHandlerInterface
    *
    *                                          Default is <i>60</i>
    *
-   * @param DB|null    $db                    [Optional] A database instance from voku\db\DB ("voku/simple-mysqli")
+   * @param Db4Session|null    $db                    [Optional] A database instance from voku\db\DB ("voku/simple-mysqli")
    */
-  public function __construct($security_code = '', $session_lifetime = '', $lock_to_user_agent = false, $lock_to_ip = false, $gc_probability = 1, $gc_divisor = 1000, $table_name = 'session_data', $lock_timeout = 60, DB $db = null)
+  public function __construct($security_code = '', $session_lifetime = '', $lock_to_user_agent = false, $lock_to_ip = false, $gc_probability = 1, $gc_divisor = 1000, $table_name = 'session_data', $lock_timeout = 60, Db4Session $db = null)
   {
     if (null !== $db) {
       $this->db = $db;
     } else {
-      $this->db = DB::getInstance();
+      $this->db = DbWrapper4Session::getInstance();
     }
 
     // If no DB connections could be found, then
@@ -540,10 +537,7 @@ class Session2DB implements \SessionHandlerInterface
     ';
 
     // counts the rows from the database
-    $result = $this->db->query($query);
-
-    // return the number of found rows
-    return $result->fetchColumn('count');
+    return (int)$this->db->fetchColumn($query, 'count');
   }
 
   /**
@@ -815,16 +809,12 @@ class Session2DB implements \SessionHandlerInterface
       LIMIT 1
     ";
 
-    $result = $this->db->query($query);
+    $data = $this->db->fetchColumn($query, 'session_data');
 
     // if anything was found
-    if (is_object($result) && $result->num_rows > 0) {
-
-      // return found data
-      $fields = $result->fetchArray();
-
+    if ($data) {
       // don't bother with the unserialization - PHP handles this automatically
-      return $fields['session_data'];
+      return $data;
     }
 
     // on error return an empty string - this HAS to be an empty string
@@ -858,7 +848,7 @@ class Session2DB implements \SessionHandlerInterface
     $result_lock = $this->db->query($query);
 
     // if there was an error, then stop the execution
-    if (!$result_lock instanceof Result || $result_lock->num_rows !== 1) {
+    if (!$result_lock) {
       return false;
     }
 
@@ -880,7 +870,7 @@ class Session2DB implements \SessionHandlerInterface
     $result_lock = $this->db->query($query_lock);
 
     // if there was an error, then stop the execution
-    if (!$result_lock instanceof Result || $result_lock->num_rows !== 1) {
+    if (!$result_lock) {
       return false;
     }
 
