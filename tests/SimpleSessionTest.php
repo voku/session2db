@@ -38,8 +38,8 @@ class SimpleSessionTest extends \PHPUnit\Framework\TestCase
   {
     parent::__construct();
 
-    $db = DB::getInstance('localhost', 'root', '', 'mysql_test');
-    $this->db = new DbWrapper4Session($db);
+    DB::getInstance('localhost', 'root', '', 'mysql_test');
+    $this->db = new DbWrapper4Session();
   }
 
   public function testGetSettings()
