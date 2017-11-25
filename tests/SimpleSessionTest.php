@@ -13,7 +13,7 @@ if (!isset($_SESSION)) {
 /**
  * Class SimpleSessionTest
  */
-class SimpleSessionTest extends PHPUnit_Framework_TestCase
+class SimpleSessionTest extends \PHPUnit\Framework\TestCase
 {
 
   /**
@@ -70,34 +70,34 @@ class SimpleSessionTest extends PHPUnit_Framework_TestCase
     $_SESSION['null'] = null;
     $this->session2DB->write($this->session_id, serialize($_SESSION));
 
-    self::assertSame(null, $_SESSION['null']);
+    self::assertNull($_SESSION['null']);
   }
 
   public function testBasic2()
   {
     $data = $this->session2DB->read($this->session_id);
-    $_SESSION = unserialize($data);
+    $_SESSION = unserialize($data, array());
 
     self::assertSame(123, $_SESSION['test']);
 
     // ---
 
     $data = $this->session2DB->read($this->session_id);
-    $_SESSION = unserialize($data);
+    $_SESSION = unserialize($data, array());
 
-    self::assertSame(null, $_SESSION['null']);
+    self::assertNull($_SESSION['null']);
   }
 
   public function testBasic3WithDbCheck()
   {
     $data = $this->session2DB->read($this->session_id);
-    $_SESSION = unserialize($data);
+    $_SESSION = unserialize($data, array());
 
     self::assertSame(123, $_SESSION['test']);
 
     $result = $this->db->getDb()->select('session_data', array('hash' => $this->session2DB->get_fingerprint()));
     $data = $result->fetchArray();
-    $sessionDataFromDb = unserialize($data['session_data']);
+    $sessionDataFromDb = unserialize($data['session_data'], array());
     self::assertSame(123, $sessionDataFromDb['test']);
   }
 
@@ -109,7 +109,7 @@ class SimpleSessionTest extends PHPUnit_Framework_TestCase
 
     self::assertSame(1, $sessionsCount1);
     self::assertSame(0, $sessionsCount2);
-    self::assertSame(0, count($_SESSION));
+    self::assertCount(0, $_SESSION);
   }
 
   public function testFlashdata()

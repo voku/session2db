@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace voku\helper;
 
 /**
@@ -52,7 +54,7 @@ class Session2DB implements \SessionHandlerInterface
   /**
    * @var array
    */
-  private $flashdata = array();
+  private $flashdata = [];
 
   /*
    * @var int
@@ -128,12 +130,14 @@ class Session2DB implements \SessionHandlerInterface
    *
    * From now on whenever PHP sets the 'PHPSESSID' cookie, the cookie will be available to all subdomains!
    *
-   * @param string     $security_code         [Optional] The value of this argument is appended to the string created
-   *                                          by
-   *                                          concatenating the user's User Agent (browser) string (or an empty string
-   *                                          if "lock_to_user_agent" is FALSE) and to the user's IP address (or an
-   *                                          empty string if "lock_to_ip" is FALSE), before creating an SHA1 hash out
-   *                                          of it and storing it in the database.
+   * @param string          $security_code      [Optional] The value of this argument is appended to the string created
+   *                                            by
+   *                                            concatenating the user's User Agent (browser) string (or an empty
+   *                                            string
+   *                                            if "lock_to_user_agent" is FALSE) and to the user's IP address (or an
+   *                                            empty string if "lock_to_ip" is FALSE), before creating an SHA1 hash
+   *                                            out
+   *                                            of it and storing it in the database.
    *
    *                                          On each call this value will be generated again and compared to the
    *                                          value stored in the database ensuring that the session is correctly
@@ -147,8 +151,8 @@ class Session2DB implements \SessionHandlerInterface
    *                                          https://www.random.org/passwords/?num=1&len=12&format=html&rnd=new this}
    *                                          link to generate such a random string.</samp>
    *
-   * @param  int|mixed $session_lifetime      [Optional] The number of seconds after which a session will be considered
-   *                                          as <i>expired</i>.
+   * @param  int|mixed      $session_lifetime   [Optional] The number of seconds after which a session will be
+   *                                            considered as <i>expired</i>.
    *
    *                                          Expired sessions are cleaned up from the database whenever the <i>garbage
    *                                          collection routine</i> is run. The probability of the <i>garbage
@@ -176,8 +180,8 @@ class Session2DB implements \SessionHandlerInterface
    *
    *                                          Pass an empty string to keep default value.
    *
-   * @param boolean    $lock_to_user_agent    [Optional] Whether to restrict the session to the same User Agent (or
-   *                                          browser) as when the session was first opened.
+   * @param boolean         $lock_to_user_agent [Optional] Whether to restrict the session to the same User Agent (or
+   *                                            browser) as when the session was first opened.
    *
    *                                          <i>The user agent check only adds minor security, since an attacker that
    *                                          hijacks the session cookie will most likely have the same user agent.</i>
@@ -199,8 +203,9 @@ class Session2DB implements \SessionHandlerInterface
    *
    *                                          Default is FALSE.
    *
-   * @param boolean    $lock_to_ip            [Optional]    Whether to restrict the session to the same IP as when the
-   *                                          session was first opened.
+   * @param boolean         $lock_to_ip         [Optional]    Whether to restrict the session to the same IP as when
+   *                                            the
+   *                                            session was first opened.
    *
    *                                          Use this with caution as many users have dynamic IP addresses which may
    *                                          change over time, or may come through proxies.
@@ -210,8 +215,8 @@ class Session2DB implements \SessionHandlerInterface
    *
    *                                          Default is FALSE.
    *
-   * @param int        $gc_probability        [Optional]    Used in conjunction with <i>$gc_divisor</i>. It defines the
-   *                                          probability that the <i>garbage collection routine</i> is started.
+   * @param int             $gc_probability     [Optional]    Used in conjunction with <i>$gc_divisor</i>. It defines
+   *                                            the probability that the <i>garbage collection routine</i> is started.
    *
    *                                          The probability is expressed by the formula:
    *
@@ -234,9 +239,9 @@ class Session2DB implements \SessionHandlerInterface
    *
    *                                          Pass an empty string to keep default value.
    *
-   * @param int        $gc_divisor            [Optional]        Used in conjunction with <i>$gc_probability</i>. It
-   *                                          defines the probability that the <i>garbage collection routine</i> is
-   *                                          started.
+   * @param int             $gc_divisor         [Optional]        Used in conjunction with <i>$gc_probability</i>. It
+   *                                            defines the probability that the <i>garbage collection routine</i> is
+   *                                            started.
    *
    *                                          The probability is expressed by the formula:
    *
@@ -259,12 +264,13 @@ class Session2DB implements \SessionHandlerInterface
    *
    *                                          Pass an empty string to keep default value.
    *
-   * @param string     $table_name            [Optional]     Name of the DB table used by the class.
+   * @param string          $table_name         [Optional]     Name of the DB table used by the class.
    *
    *                                          Default is <i>session_data</i>.
    *
-   * @param int        $lock_timeout          [Optional]      The maximum amount of time (in seconds) for which a lock
-   *                                          on the session data can be kept.
+   * @param int             $lock_timeout       [Optional]      The maximum amount of time (in seconds) for which a
+   *                                            lock
+   *                                            on the session data can be kept.
    *
    *                                          <i>This must be lower than the maximum execution time of the script!</i>
    *
@@ -277,7 +283,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    *                                          Default is <i>60</i>
    *
-   * @param Db4Session|null    $db                    [Optional] A database instance from voku\db\DB ("voku/simple-mysqli")
+   * @param Db4Session|null $db                 [Optional] A database instance from voku\db\DB ("voku/simple-mysqli")
    */
   public function __construct($security_code = '', $session_lifetime = '', $lock_to_user_agent = false, $lock_to_ip = false, $gc_probability = 1, $gc_divisor = 1000, $table_name = 'session_data', $lock_timeout = 60, Db4Session $db = null)
   {
@@ -324,7 +330,7 @@ class Session2DB implements \SessionHandlerInterface
 
     // start the session
     if (PHP_SAPI === 'cli') {
-      $_SESSION = array();
+      $_SESSION = [];
     } else {
       \session_start();
     }
@@ -333,7 +339,7 @@ class Session2DB implements \SessionHandlerInterface
     if (isset($_SESSION[self::flashDataVarName])) {
 
       // store them
-      $this->flashdata = unserialize($_SESSION[self::flashDataVarName]);
+      $this->flashdata = unserialize($_SESSION[self::flashDataVarName], array());
 
       // and destroy the temporary session variable
       unset($_SESSION[self::flashDataVarName]);
@@ -341,10 +347,10 @@ class Session2DB implements \SessionHandlerInterface
 
     // handle flashdata after script execution
     register_shutdown_function(
-        array(
+        [
             $this,
             '_manage_flashdata',
-        )
+        ]
     );
   }
 
@@ -377,7 +383,7 @@ class Session2DB implements \SessionHandlerInterface
   /**
    * @return string
    */
-  public function get_fingerprint()
+  public function get_fingerprint(): string
   {
     return $this->_fingerprint;
   }
@@ -393,9 +399,9 @@ class Session2DB implements \SessionHandlerInterface
     if (
         PHP_SAPI !== 'cli'
         &&
-        headers_sent() === true
+        \headers_sent() === true
     ) {
-      trigger_error('You cannot change the session module\'s ini settings at this time', E_USER_WARNING);
+      \trigger_error('You cannot change the session module\'s ini settings at this time', E_USER_WARNING);
     }
 
     // Prevent session-fixation
@@ -404,66 +410,66 @@ class Session2DB implements \SessionHandlerInterface
     // Tell the browser not to expose the cookie to client side scripting,
     // this makes it harder for an attacker to hijack the session ID.
     /** @noinspection PhpUsageOfSilenceOperatorInspection */
-    @ini_set('session.cookie_httponly', 1);
+    @\ini_set('session.cookie_httponly', '1');
 
     // Make sure that PHP only uses cookies for sessions and disallow session ID passing as a GET parameter,
     /** @noinspection PhpUsageOfSilenceOperatorInspection */
-    @ini_set('session.session.use_only_cookies', 1);
+    @\ini_set('session.session.use_only_cookies', '1');
 
     // PHP 7.1 Incompatible Changes
     // -> http://php.net/manual/en/migration71.incompatible.php
     if (Bootup::is_php('7.1') === false) {
       // Use the SHA-1 hashing algorithm
       /** @noinspection PhpUsageOfSilenceOperatorInspection */
-      @ini_set('session.hash_function', 1);
+      @ini_set('session.hash_function', '1');
 
       // Increase character-range of the session ID to help prevent brute-force attacks.
       //
       // INFO: The possible values are '4' (0-9, a-f), '5' (0-9, a-v), and '6' (0-9, a-z, A-Z, "-", ",").
       /** @noinspection PhpUsageOfSilenceOperatorInspection */
-      @ini_set('session.hash_bits_per_character', 6);
+      @ini_set('session.hash_bits_per_character', '6');
     }
 
     // make sure session cookies never expire so that session lifetime
     // will depend only on the value of $session_lifetime
     /** @noinspection PhpUsageOfSilenceOperatorInspection */
-    @ini_set('session.cookie_lifetime', 0);
+    @\ini_set('session.cookie_lifetime', '0');
 
     // if $session_lifetime is specified and is an integer number
-    if ($session_lifetime !== '' && is_int($session_lifetime)) {
+    if ($session_lifetime !== '' && \is_int($session_lifetime)) {
       /** @noinspection PhpUsageOfSilenceOperatorInspection */
-      @ini_set('session.gc_maxlifetime', (int)$session_lifetime);
+      @\ini_set('session.gc_maxlifetime', (string)$session_lifetime);
     } else {
       // fallback to 1h - 3600s
       /** @noinspection PhpUsageOfSilenceOperatorInspection */
-      @ini_set('session.gc_maxlifetime', 3600);
+      @\ini_set('session.gc_maxlifetime', '3600');
     }
 
     // if $gc_probability is specified and is an integer number
-    if ($gc_probability !== '' && is_int($gc_probability)) {
+    if ($gc_probability !== '' && \is_int($gc_probability)) {
       /** @noinspection PhpUsageOfSilenceOperatorInspection */
-      @ini_set('session.gc_probability', $gc_probability);
+      @\ini_set('session.gc_probability', (string)$gc_probability);
     }
 
     // if $gc_divisor is specified and is an integer number
-    if ($gc_divisor !== '' && is_int($gc_divisor)) {
+    if ($gc_divisor !== '' && \is_int($gc_divisor)) {
       /** @noinspection PhpUsageOfSilenceOperatorInspection */
-      @ini_set('session.gc_divisor', $gc_divisor);
+      @\ini_set('session.gc_divisor', (string)$gc_divisor);
     }
   }
 
   /**
    * @return bool
    */
-  private function register_session_handler()
+  private function register_session_handler(): bool
   {
     // WARNING: PHP 7.2 throws a warning for "session"-ini, so we catch it here ...
     if (
         PHP_SAPI !== 'cli'
         &&
-        headers_sent() === true
+        \headers_sent() === true
     ) {
-      trigger_error('Cannot change save handler when headers already sent', E_USER_WARNING);
+      \trigger_error('Cannot change save handler when headers already sent', E_USER_WARNING);
     }
 
     if (Bootup::is_php('5.4')) {
@@ -473,30 +479,30 @@ class Session2DB implements \SessionHandlerInterface
 
     /** @noinspection PhpUsageOfSilenceOperatorInspection */
     $results = @\session_set_save_handler(
-        array(
+        [
             &$this,
             'open',
-        ),
-        array(
+        ],
+        [
             &$this,
             'close',
-        ),
-        array(
+        ],
+        [
             &$this,
             'read',
-        ),
-        array(
+        ],
+        [
             &$this,
             'write',
-        ),
-        array(
+        ],
+        [
             &$this,
             'destroy',
-        ),
-        array(
+        ],
+        [
             &$this,
             'gc',
-        )
+        ]
     );
 
     if (!$results) {
@@ -527,12 +533,12 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return int <p>Returns the number of active (not expired) sessions.</p>
    */
-  public function get_active_sessions()
+  public function get_active_sessions(): int
   {
     // call the garbage collector
     $this->gc($this->session_lifetime);
 
-    $query = 'SELECT COUNT(session_id) as count
+    $query = 'SELECT COUNT(session_id) AS count
       FROM ' . $this->table_name . '
     ';
 
@@ -547,14 +553,14 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return int
    */
-  public function gc(/* @noinspection PhpUnusedParameterInspection */ $maxlifetime)
+  public function gc($maxlifetime): int
   {
     $query = 'DELETE FROM ' . $this->table_name . "
-      WHERE session_expire < '" . $this->db->escape(time()) . "'
+      WHERE session_expire < '" . $this->db->escape(\time()) . "'
     ";
 
     // deletes expired sessions from database
-    return $this->db->query($query);
+    return (int)$this->db->query($query);
   }
 
   /**
@@ -583,25 +589,25 @@ class Session2DB implements \SessionHandlerInterface
    * //  )
    * </code>
    *
-   * @return array <p>
-   *               Returns the values of <i>session.gc_maxlifetime</i>, <i>session.gc_probability</i> and
-   *               <i>session.gc_divisor</i> as an associative array.
-   *               </p>
+   * @return string[] <p>
+   *                  Returns the values of <i>session.gc_maxlifetime</i>, <i>session.gc_probability</i> and
+   *                  <i>session.gc_divisor</i> as an associative array.
+   *                  </p>
    */
-  public function get_settings()
+  public function get_settings(): array
   {
     // get the settings
-    $gc_maxlifetime = ini_get('session.gc_maxlifetime');
-    $gc_probability = ini_get('session.gc_probability');
-    $gc_divisor = ini_get('session.gc_divisor');
+    $gc_maxlifetime = \ini_get('session.gc_maxlifetime');
+    $gc_probability = \ini_get('session.gc_probability');
+    $gc_divisor = \ini_get('session.gc_divisor');
 
     // return them as an array
-    return array(
-        'session.gc_maxlifetime' => $gc_maxlifetime . ' seconds (' . round($gc_maxlifetime / 60) . ' minutes)',
+    return [
+        'session.gc_maxlifetime' => $gc_maxlifetime . ' seconds (' . \round($gc_maxlifetime / 60) . ' minutes)',
         'session.gc_probability' => $gc_probability,
         'session.gc_divisor'     => $gc_divisor,
         'probability'            => $gc_probability / $gc_divisor * 100 . '%',
-    );
+    ];
   }
 
   /**
@@ -671,12 +677,12 @@ class Session2DB implements \SessionHandlerInterface
     }
 
     // if a cookie is used to pass the session id
-    if (ini_get('session.use_cookies')) {
+    if (\ini_get('session.use_cookies')) {
       // get session cookie's properties
       $params = \session_get_cookie_params();
 
       // unset the cookie
-      setcookie(\session_name(), '', time() - 42000, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
+      \setcookie(\session_name(), '', \time() - 42000, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
     }
 
     \session_unset();
@@ -715,7 +721,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return bool
    */
-  public function destroy($session_id)
+  public function destroy($session_id): bool
   {
     $query = 'DELETE FROM ' . $this->table_name . "
       WHERE session_id = '" . $this->db->escape($session_id) . "'
@@ -724,11 +730,7 @@ class Session2DB implements \SessionHandlerInterface
     // deletes the current session id from the database
     $result = $this->db->query($query);
 
-    if ($result > 0) {
-      return true;
-    }
-
-    return false;
+    return ($result > 0);
   }
 
   /**
@@ -736,7 +738,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return bool
    */
-  public function close()
+  public function close(): bool
   {
     // 1. write all data into the db
     \session_register_shutdown();
@@ -760,7 +762,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return true
    */
-  public function open(/* @noinspection PhpUnusedParameterInspection */ $save_path, $session_name)
+  public function open($save_path, $session_name): bool
   {
     // session_regenerate_id() --->
     //
@@ -784,7 +786,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return string
    */
-  public function read($session_id)
+  public function read($session_id): string
   {
     // Needed by write() to detect session_regenerate_id() calls
     $this->_session_id = $session_id;
@@ -794,7 +796,7 @@ class Session2DB implements \SessionHandlerInterface
 
     // if there was an error, then stop the execution
     if ($locked === false) {
-      trigger_error('Session: Could not obtain session lock!', E_USER_ERROR);
+      \trigger_error('Session: Could not obtain session lock!', E_USER_ERROR);
     }
 
     $hash = $this->get_fingerprint();
@@ -805,7 +807,7 @@ class Session2DB implements \SessionHandlerInterface
         ' . $this->table_name . "
       WHERE session_id = '" . $this->db->escape($session_id) . "'
       AND hash = '" . $this->db->escape($hash) . "'
-      AND session_expire > '" . $this->db->escape(time()) . "'
+      AND session_expire > '" . $this->db->escape(\time()) . "'
       LIMIT 1
     ";
 
@@ -826,11 +828,11 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return string
    */
-  private function _lock_name($session_id)
+  private function _lock_name(string $session_id): string
   {
     // MySQL >=5.7.5 | the new GET_LOCK implementation has a limit on the identifier name
     // -> https://bugs.mysql.com/bug.php?id=80721
-    return $this->db->escape('session_' . sha1($session_id));
+    return $this->db->escape('session_' . \sha1($session_id));
   }
 
   /**
@@ -838,7 +840,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return bool
    */
-  private function _release_lock($session_id)
+  private function _release_lock(string $session_id): bool
   {
     // get the lock name, associated with the current session
     $look_name = $this->_lock_name($session_id);
@@ -860,7 +862,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return bool
    */
-  private function _get_lock($session_id)
+  private function _get_lock(string $session_id): bool
   {
     // get the lock name, associated with the current session
     $look_name = $this->_lock_name($session_id);
@@ -919,21 +921,17 @@ class Session2DB implements \SessionHandlerInterface
         '" . $this->db->escape($session_id) . "',
         '" . $this->db->escape($hash) . "',
         '" . $this->db->escape($session_data) . "',
-        '" . $this->db->escape(time() + $this->session_lifetime) . "'
+        '" . $this->db->escape(\time() + $this->session_lifetime) . "'
       )
       ON DUPLICATE KEY UPDATE
         session_data = '" . $this->db->escape($session_data) . "',
-        session_expire = '" . $this->db->escape(time() + $this->session_lifetime) . "'
+        session_expire = '" . $this->db->escape(\time() + $this->session_lifetime) . "'
     ";
 
     // insert OR update session's data
     $result = $this->db->query($query);
 
-    if ($result !== false) {
-      return true;
-    }
-
-    return false;
+    return ($result !== false);
   }
 
   /**
@@ -963,7 +961,7 @@ class Session2DB implements \SessionHandlerInterface
       // if there is any flashdata left to be handled
       // ... then store data in a temporary session variable
       if (!empty($this->flashdata)) {
-        $_SESSION[self::flashDataVarName] = serialize($this->flashdata);
+        $_SESSION[self::flashDataVarName] = \serialize($this->flashdata);
       }
     }
   }

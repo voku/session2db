@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace voku\helper;
 
 use voku\db\DB;
@@ -29,7 +31,7 @@ class DbWrapper4Session implements Db4Session
   /**
    * @inheritdoc
    */
-  public function close()
+  public function close(): bool
   {
     return $this->db->close();
   }
@@ -45,7 +47,7 @@ class DbWrapper4Session implements Db4Session
   /**
    * @inheritdoc
    */
-  public function fetchColumn($sql, $string)
+  public function fetchColumn(string $sql, string $string)
   {
     $result = $this->db->query($sql);
 
@@ -55,7 +57,7 @@ class DbWrapper4Session implements Db4Session
   /**
    * @inheritdoc
    */
-  public function ping()
+  public function ping(): bool
   {
     return $this->db->ping();
   }
@@ -63,7 +65,7 @@ class DbWrapper4Session implements Db4Session
   /**
    * @inheritdoc
    */
-  public function query($sql)
+  public function query(string $sql)
   {
     return $this->db->query($sql);
   }
@@ -71,7 +73,7 @@ class DbWrapper4Session implements Db4Session
   /**
    * @inheritdoc
    */
-  public function quote_string($string)
+  public function quote_string(string $string): string
   {
     return $this->db->quote_string($string);
   }
@@ -79,7 +81,7 @@ class DbWrapper4Session implements Db4Session
   /**
    * @inheritdoc
    */
-  public function reconnect()
+  public function reconnect(): bool
   {
     return $this->db->reconnect();
   }
