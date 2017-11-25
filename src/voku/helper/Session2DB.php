@@ -151,7 +151,7 @@ class Session2DB implements \SessionHandlerInterface
    *                                          https://www.random.org/passwords/?num=1&len=12&format=html&rnd=new this}
    *                                          link to generate such a random string.</samp>
    *
-   * @param  int|mixed      $session_lifetime   [Optional] The number of seconds after which a session will be
+   * @param  int     $session_lifetime   [Optional] The number of seconds after which a session will be
    *                                            considered as <i>expired</i>.
    *
    *                                          Expired sessions are cleaned up from the database whenever the <i>garbage
@@ -285,7 +285,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @param Db4Session|null $db                 [Optional] A database instance from voku\db\DB ("voku/simple-mysqli")
    */
-  public function __construct($security_code = '', $session_lifetime = '', $lock_to_user_agent = false, $lock_to_ip = false, $gc_probability = 1, $gc_divisor = 1000, $table_name = 'session_data', $lock_timeout = 60, Db4Session $db = null)
+  public function __construct(string $security_code = '', $session_lifetime = 3600, bool $lock_to_user_agent = false, bool $lock_to_ip = false, int $gc_probability = 1, int $gc_divisor = 1000, string $table_name = 'session_data', int $lock_timeout = 60, Db4Session $db = null)
   {
     if (null !== $db) {
       $this->db = $db;
@@ -296,7 +296,7 @@ class Session2DB implements \SessionHandlerInterface
     // If no DB connections could be found, then
     // trigger a fatal error message and stop execution.
     if (!$this->db->ping()) {
-      trigger_error('Session: No DB-Connection!', E_USER_ERROR);
+      \trigger_error('Session: No DB-Connection!', E_USER_ERROR);
     }
 
     // fallback for the security-code
@@ -307,7 +307,7 @@ class Session2DB implements \SessionHandlerInterface
     $this->overwriteIniSettings($session_lifetime, $gc_probability, $gc_divisor);
 
     // get session lifetime
-    $this->session_lifetime = ini_get('session.gc_maxlifetime');
+    $this->session_lifetime = \ini_get('session.gc_maxlifetime');
 
     // we'll use this later on in order to try to prevent HTTP_USER_AGENT spoofing
     $this->security_code = $security_code;
@@ -339,14 +339,14 @@ class Session2DB implements \SessionHandlerInterface
     if (isset($_SESSION[self::flashDataVarName])) {
 
       // store them
-      $this->flashdata = unserialize($_SESSION[self::flashDataVarName], array());
+      $this->flashdata = \unserialize($_SESSION[self::flashDataVarName], []);
 
       // and destroy the temporary session variable
       unset($_SESSION[self::flashDataVarName]);
     }
 
     // handle flashdata after script execution
-    register_shutdown_function(
+    \register_shutdown_function(
         [
             $this,
             '_manage_flashdata',
@@ -377,7 +377,7 @@ class Session2DB implements \SessionHandlerInterface
     $hash .= $this->security_code;
 
     // save the fingerprint-hash into the current object
-    $this->_fingerprint = sha1($hash);
+    $this->_fingerprint = \sha1($hash);
   }
 
   /**
@@ -435,27 +435,14 @@ class Session2DB implements \SessionHandlerInterface
     /** @noinspection PhpUsageOfSilenceOperatorInspection */
     @\ini_set('session.cookie_lifetime', '0');
 
-    // if $session_lifetime is specified and is an integer number
-    if ($session_lifetime !== '' && \is_int($session_lifetime)) {
-      /** @noinspection PhpUsageOfSilenceOperatorInspection */
-      @\ini_set('session.gc_maxlifetime', (string)$session_lifetime);
-    } else {
-      // fallback to 1h - 3600s
-      /** @noinspection PhpUsageOfSilenceOperatorInspection */
-      @\ini_set('session.gc_maxlifetime', '3600');
-    }
+    /** @noinspection PhpUsageOfSilenceOperatorInspection */
+    @\ini_set('session.gc_maxlifetime', (string)$session_lifetime);
 
-    // if $gc_probability is specified and is an integer number
-    if ($gc_probability !== '' && \is_int($gc_probability)) {
-      /** @noinspection PhpUsageOfSilenceOperatorInspection */
-      @\ini_set('session.gc_probability', (string)$gc_probability);
-    }
+    /** @noinspection PhpUsageOfSilenceOperatorInspection */
+    @\ini_set('session.gc_probability', (string)$gc_probability);
 
-    // if $gc_divisor is specified and is an integer number
-    if ($gc_divisor !== '' && \is_int($gc_divisor)) {
-      /** @noinspection PhpUsageOfSilenceOperatorInspection */
-      @\ini_set('session.gc_divisor', (string)$gc_divisor);
-    }
+    /** @noinspection PhpUsageOfSilenceOperatorInspection */
+    @\ini_set('session.gc_divisor', (string)$gc_divisor);
   }
 
   /**
@@ -643,9 +630,9 @@ class Session2DB implements \SessionHandlerInterface
    * </code>
    *
    * @param string $name  <p>The name of the session variable.</p>
-   * @param string $value <p>The value of the session variable.</p>
+   * @param mixed  $value <p>The value of the session variable.</p>
    */
-  public function set_flashdata($name, $value)
+  public function set_flashdata(string $name, $value)
   {
     // set session variable
     $_SESSION[$name] = $value;
@@ -760,7 +747,7 @@ class Session2DB implements \SessionHandlerInterface
    * @param string $save_path
    * @param string $session_name
    *
-   * @return true
+   * @return bool
    */
   public function open($save_path, $session_name): bool
   {
@@ -776,7 +763,7 @@ class Session2DB implements \SessionHandlerInterface
       $this->db->reconnect();
     }
 
-    return true;
+    return $this->db->ping();
   }
 
   /**
