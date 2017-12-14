@@ -26,6 +26,8 @@ class DbWrapper4Session implements Db4Session
     } else {
       $this->db = DB::getInstance();
     }
+
+    $this->db->setConfigExtra(array('session_to_db' => true));
   }
 
   /**

@@ -101,6 +101,61 @@ class SimpleSessionTest extends \PHPUnit\Framework\TestCase
     self::assertSame(123, $sessionDataFromDb['test']);
   }
 
+  public function testBasicWithFileLock()
+  {
+    $this->session2DB->use_lock_via_mysql(false);
+
+    $_SESSION['test'] = 1234;
+    $this->session2DB->write($this->session_id, serialize($_SESSION));
+
+    self::assertSame(1234, $_SESSION['test']);
+
+    // ---
+
+    $_SESSION['null'] = null;
+    $this->session2DB->write($this->session_id, serialize($_SESSION));
+
+    self::assertNull($_SESSION['null']);
+
+    $this->session2DB->use_lock_via_mysql(true);
+  }
+
+  public function testBasicWithFileLock2()
+  {
+    $this->session2DB->use_lock_via_mysql(false);
+
+    $data = $this->session2DB->read($this->session_id);
+    $_SESSION = unserialize($data, array());
+
+    self::assertSame(1234, $_SESSION['test']);
+
+    // ---
+
+    $data = $this->session2DB->read($this->session_id);
+    $_SESSION = unserialize($data, array());
+
+    self::assertNull($_SESSION['null']);
+
+    $this->session2DB->use_lock_via_mysql(true);
+  }
+
+  public function testBasicWithFileLock3WithDbCheck()
+  {
+    $this->session2DB->use_lock_via_mysql(false);
+
+    $data = $this->session2DB->read($this->session_id);
+    $_SESSION = unserialize($data, array());
+
+    self::assertSame(1234, $_SESSION['test']);
+
+    $result = $this->db->getDb()->select('session_data', array('hash' => $this->session2DB->get_fingerprint()));
+    $data = $result->fetchArray();
+    $sessionDataFromDb = unserialize($data['session_data'], array());
+    self::assertSame(1234, $sessionDataFromDb['test']);
+
+    $this->session2DB->use_lock_via_mysql(true);
+  }
+
   public function testDestroy()
   {
     $sessionsCount1 = $this->session2DB->get_active_sessions();
@@ -121,12 +176,35 @@ class SimpleSessionTest extends \PHPUnit\Framework\TestCase
     self::assertSame('lall', $_SESSION['test2']);
 
     $this->session2DB->_manage_flashdata();
-    self::assertSame(false, isset($_SESSION['test2']));
+    self::assertFalse(isset($_SESSION['test2']));
+  }
+
+  public function testClose()
+  {
+    $this->session2DB->read($this->session_id); // needed to set the session-id
+
+    $this->session2DB->use_lock_via_mysql(true);
+    $result = $this->session2DB->close();
+    self::assertTrue($result);
+
+    $this->session2DB->use_lock_via_mysql(false);
+    $result = $this->session2DB->close();
+    self::assertTrue($result);
   }
 
   public function setUp()
   {
-    $this->session2DB = new Session2DB('teste21321_!!', 3600, true, false, 1, 1000, 'session_data', 60, $this->db);
+    $this->session2DB = new Session2DB(
+        'teste21321_!!',
+        3600,
+        true,
+        false,
+        1,
+        1000,
+        'session_data',
+        60,
+        $this->db
+    );
   }
 
 }
