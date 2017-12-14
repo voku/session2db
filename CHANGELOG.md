@@ -1,3 +1,8 @@
+# Changelog 3.2.1 (2017-12-14)
+
+* use php7 type-hints
+
+
 # Changelog 3.2.0 (2017-12-14)
 
 * edit "Session2DB->use_lock_via_mysql(bool|null)"
@@ -6,10 +11,12 @@
    - false => use php flock() + LOCK_EX
    - null => use mysql + extra lock-table
 
+
 # Changelog 3.1.0 (2017-12-14)
 
 * add "Session2DB->use_lock_via_mysql(bool)"
 * use new version of "Simple MySQLi" (voku/simple-mysqli)
+
 
 # Changelog 3.0.0 (2017-11-25)
 
