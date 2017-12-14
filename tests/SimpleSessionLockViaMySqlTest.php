@@ -11,9 +11,9 @@ if (!isset($_SESSION)) {
 }
 
 /**
- * Class SimpleSessionTest
+ * Class SimpleSessionLockViaMySqlTest
  */
-class SimpleSessionTest extends \PHPUnit\Framework\TestCase
+class SimpleSessionLockViaMySqlTest extends \PHPUnit\Framework\TestCase
 {
 
   /**
@@ -38,8 +38,8 @@ class SimpleSessionTest extends \PHPUnit\Framework\TestCase
   {
     parent::__construct();
 
-    DB::getInstance('localhost', 'root', '', 'mysql_test');
-    $this->db = new DbWrapper4Session();
+    $db = DB::getInstance('localhost', 'root', '', 'mysql_test');
+    $this->db = new DbWrapper4Session($db);
   }
 
   public function testGetSettings()
@@ -99,61 +99,6 @@ class SimpleSessionTest extends \PHPUnit\Framework\TestCase
     $data = $result->fetchArray();
     $sessionDataFromDb = unserialize($data['session_data'], array());
     self::assertSame(123, $sessionDataFromDb['test']);
-  }
-
-  public function testBasicWithFileLock()
-  {
-    $this->session2DB->use_lock_via_mysql(false);
-
-    $_SESSION['test'] = 1234;
-    $this->session2DB->write($this->session_id, serialize($_SESSION));
-
-    self::assertSame(1234, $_SESSION['test']);
-
-    // ---
-
-    $_SESSION['null'] = null;
-    $this->session2DB->write($this->session_id, serialize($_SESSION));
-
-    self::assertNull($_SESSION['null']);
-
-    $this->session2DB->use_lock_via_mysql(true);
-  }
-
-  public function testBasicWithFileLock2()
-  {
-    $this->session2DB->use_lock_via_mysql(false);
-
-    $data = $this->session2DB->read($this->session_id);
-    $_SESSION = unserialize($data, array());
-
-    self::assertSame(1234, $_SESSION['test']);
-
-    // ---
-
-    $data = $this->session2DB->read($this->session_id);
-    $_SESSION = unserialize($data, array());
-
-    self::assertNull($_SESSION['null']);
-
-    $this->session2DB->use_lock_via_mysql(true);
-  }
-
-  public function testBasicWithFileLock3WithDbCheck()
-  {
-    $this->session2DB->use_lock_via_mysql(false);
-
-    $data = $this->session2DB->read($this->session_id);
-    $_SESSION = unserialize($data, array());
-
-    self::assertSame(1234, $_SESSION['test']);
-
-    $result = $this->db->getDb()->select('session_data', array('hash' => $this->session2DB->get_fingerprint()));
-    $data = $result->fetchArray();
-    $sessionDataFromDb = unserialize($data['session_data'], array());
-    self::assertSame(1234, $sessionDataFromDb['test']);
-
-    $this->session2DB->use_lock_via_mysql(true);
   }
 
   public function testDestroy()

@@ -67,7 +67,7 @@ class Session2DB implements \SessionHandlerInterface
   private $lock_file_tmp;
 
   /**
-   * @var bool
+   * @var bool|null
    */
   private $lock_via_mysql = true;
 
@@ -89,7 +89,12 @@ class Session2DB implements \SessionHandlerInterface
   /**
    * @var string
    */
-  private $table_name;
+  private $table_name = 'session_data';
+
+  /**
+   * @var string
+   */
+  private $table_name_lock = 'lock_data';
 
   /**
    * @var string
@@ -295,7 +300,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @param Db4Session|null $db                 [Optional] A database instance from voku\db\DB ("voku/simple-mysqli")
    */
-  public function __construct(string $security_code = '', $session_lifetime = 3600, bool $lock_to_user_agent = false, bool $lock_to_ip = false, int $gc_probability = 1, int $gc_divisor = 1000, string $table_name = 'session_data', int $lock_timeout = 60, Db4Session $db = null)
+  public function __construct(string $security_code = '', $session_lifetime = 3600, bool $lock_to_user_agent = false, bool $lock_to_ip = false, int $gc_probability = 1, int $gc_divisor = 1000, string $table_name = '', int $lock_timeout = 60, Db4Session $db = null)
   {
     if (null !== $db) {
       $this->db = $db;
@@ -303,15 +308,15 @@ class Session2DB implements \SessionHandlerInterface
       $this->db = DbWrapper4Session::getInstance();
     }
 
-    // If no DB connections could be found, then
+    // If no DB connections could be found and
+    // we could not connect to the DB, then
     // trigger a fatal error message and stop execution.
-    if (!$this->db->ping()) {
+    if (
+        !$this->db->ping()
+        &&
+        !$this->db->reconnect()
+    ) {
       \trigger_error('Session: No DB-Connection!', E_USER_ERROR);
-    }
-
-    // fallback for the security-code
-    if (!$security_code || $security_code = '###set_the_security_key###') {
-      $security_code = 'sEcUrmenadwork_))';
     }
 
     $this->overwriteIniSettings($session_lifetime, $gc_probability, $gc_divisor);
@@ -320,7 +325,7 @@ class Session2DB implements \SessionHandlerInterface
     $this->session_lifetime = \ini_get('session.gc_maxlifetime');
 
     // we'll use this later on in order to try to prevent HTTP_USER_AGENT spoofing
-    $this->security_code = $security_code;
+    $this->set_security_code($security_code);
 
     // some other defaults
     $this->lock_to_user_agent = $lock_to_user_agent;
@@ -328,7 +333,7 @@ class Session2DB implements \SessionHandlerInterface
     $this->lock_file_tmp = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'session2db.lock.';
 
     // the table to be used by the class
-    $this->table_name = $this->db->quote_string($table_name);
+    $this->set_table_name($table_name);
 
     // the maximum amount of time (in seconds) for which a process can lock the session
     $this->lock_timeout = $lock_timeout;
@@ -363,6 +368,142 @@ class Session2DB implements \SessionHandlerInterface
             '_manage_flashdata',
         ]
     );
+  }
+
+  /**
+   * @param $look_name
+   * @param $lock_time
+   *
+   * @return array
+   */
+  private function _get_lock_mysql_fake($look_name, $lock_time): array
+  {
+    // init
+    $result_lock = false;
+
+    $query_lock = "
+    SELECT * FROM " . $this->table_name_lock . " 
+      WHERE lock_hash = '" . $this->db->escape($look_name) . "'
+      LIMIT 1
+    ";
+    $db_result = $this->db->query($query_lock);
+    $old_lock_timeout = $db_result->fetchColumn('lock_time');
+
+    if (!$old_lock_timeout) {
+      $query_lock = "
+      INSERT INTO " . $this->table_name_lock . " 
+        SET 
+          lock_hash = '" . $this->db->escape($look_name) . "',
+          lock_time = '" . $this->db->escape($lock_time) . "'
+      ";
+      if ($this->db->query($query_lock) !== false) {
+        $result_lock = true;
+      }
+    }
+
+    return [$old_lock_timeout, $result_lock];
+  }
+
+  /**
+   * @param $look_name
+   *
+   * @return array|string
+   */
+  private function _get_lock_mysql_nativ($look_name)
+  {
+    $query_lock = "SELECT GET_LOCK('" . $this->db->escape($look_name) . "', " . $this->db->escape($this->lock_timeout) . ') as result';
+    $db_result = $this->db->query($query_lock);
+    $result_lock = $db_result->fetchColumn('result');
+
+    return $result_lock;
+  }
+
+  /**
+   * @param $look_name
+   * @param $lock_time
+   *
+   * @return array
+   */
+  private function _get_lock_php_nativ($look_name, $lock_time): array
+  {
+    // init
+    $result_lock = false;
+    $lock_file = $this->lock_file_tmp . $look_name;
+
+    /** @noinspection PhpUsageOfSilenceOperatorInspection */
+    $fp = @fopen($lock_file, 'rb');
+    $old_lock_timeout = '';
+    if ($fp && flock($fp, LOCK_SH | LOCK_NB)) {
+      while (!feof($fp)) {
+        $line = fgets($fp);
+        $old_lock_timeout .= $line;
+      }
+      flock($fp, LOCK_UN);
+    }
+    if ($fp) {
+      fclose($fp);
+    }
+
+    if (!$old_lock_timeout) {
+      /** @noinspection PhpUsageOfSilenceOperatorInspection */
+      $fp = @fopen($lock_file, 'ab');
+      if ($fp && flock($fp, LOCK_EX | LOCK_NB)) {
+        ftruncate($fp, 0);
+        $result_lock = fwrite($fp, $lock_time);
+        fflush($fp);
+        flock($fp, LOCK_UN);
+      }
+      fclose($fp);
+    }
+
+    return [$old_lock_timeout, $result_lock];
+  }
+
+  /**
+   * @param $look_name
+   *
+   * @return bool
+   */
+  private function _release_lock_php_nativ($look_name): bool
+  {
+    $lock_file = $this->lock_file_tmp . $look_name;
+    if (\file_exists($lock_file) === true) {
+      /** @noinspection PhpUsageOfSilenceOperatorInspection */
+      $result_unlock = @unlink($lock_file);
+    } else {
+      $result_unlock = true;
+    }
+
+    return $result_unlock;
+  }
+
+  /**
+   * @param $look_name
+   *
+   * @return bool|false|int|mixed|\voku\db\Result
+   */
+  private function _release_lock_sql_fake($look_name)
+  {
+    $query = 'DELETE FROM ' . $this->table_name_lock . "
+        WHERE lock_hash = '" . $this->db->escape($look_name) . "'
+      ";
+    $result_unlock = $this->db->query($query);
+
+    return $result_unlock;
+  }
+
+  /**
+   * @param $look_name
+   *
+   * @return array|string
+   */
+  private function _release_lock_sql_nativ($look_name)
+  {
+    $query = "SELECT RELEASE_LOCK('" . $this->db->escape($look_name) . "') as result";
+    $db_result = $this->db->query($query);
+    $result_unlock = $db_result->fetchColumn('result');
+
+    return $result_unlock;
   }
 
   private function generate_fingerprint()
@@ -553,11 +694,20 @@ class Session2DB implements \SessionHandlerInterface
    */
   public function gc($maxlifetime): int
   {
+    // deletes expired locks from database
+    if ($this->lock_via_mysql === null) {
+      $queryLock = 'DELETE FROM ' . $this->table_name_lock . "
+        WHERE lock_time < '" . $this->db->escape(\time()) . "'
+      ";
+      $this->db->query($queryLock);
+    }
+
+    // deletes expired sessions from database
+
     $query = 'DELETE FROM ' . $this->table_name . "
       WHERE session_expire < '" . $this->db->escape(\time()) . "'
     ";
 
-    // deletes expired sessions from database
     return (int)$this->db->query($query);
   }
 
@@ -653,13 +803,118 @@ class Session2DB implements \SessionHandlerInterface
   }
 
   /**
-   * @param bool $bool
+   * @param bool|null $boolOrNull <p>
+   *                              <strong>true</strong> => use mysql GET_LOCK() / RELEASE_LOCK()<br>
+   *                              <strong>false</strong> => use php flock() + LOCK_EX<br>
+   *                              <strong>null</strong> => use mysql + extra lock-table<br>
+   *                              </p>
    *
    * @return $this
    */
-  public function use_lock_via_mysql(bool $bool)
+  public function use_lock_via_mysql($boolOrNull)
   {
-    $this->lock_via_mysql = $bool;
+    $this->lock_via_mysql = $boolOrNull;
+
+    return $this;
+  }
+
+  /**
+   * @param string $table_name
+   *
+   * @return $this
+   */
+  public function set_table_name($table_name)
+  {
+    if ($table_name) {
+      $this->table_name = $this->db->quote_string($table_name);
+    }
+
+    return $this;
+  }
+
+  /**
+   * @param string $table_name_lock
+   *
+   * @return $this
+   */
+  public function set_table_name_lock($table_name_lock)
+  {
+    if ($table_name_lock) {
+      $this->table_name_lock = $this->db->quote_string($table_name_lock);
+    }
+
+    return $this;
+  }
+
+  /**
+   * @param string $lock_file_tmp
+   *
+   * @return $this
+   */
+  public function set_lock_file_tmp($lock_file_tmp)
+  {
+    if ($lock_file_tmp) {
+      $this->lock_file_tmp = $lock_file_tmp;
+    }
+
+    return $this;
+  }
+
+  /**
+   * @param int $lock_timeout
+   *
+   * @return $this
+   */
+  public function set_lock_timeout(int $lock_timeout)
+  {
+    $this->lock_timeout = $lock_timeout;
+
+    return $this;
+  }
+
+  /**
+   * @param bool $lock_to_ip
+   *
+   * @return $this
+   */
+  public function set_lock_to_ip(bool $lock_to_ip)
+  {
+    $this->lock_to_ip = $lock_to_ip;
+
+    $this->generate_fingerprint();
+
+    return $this;
+  }
+
+  /**
+   * @param bool $lock_to_user_agent
+   *
+   * @return $this
+   */
+  public function set_lock_to_user_agent(bool $lock_to_user_agent)
+  {
+    $this->lock_to_user_agent = $lock_to_user_agent;
+
+    $this->generate_fingerprint();
+
+    return $this;
+  }
+
+  /**
+   * @param string $security_code
+   *
+   * @return $this
+   */
+  public function set_security_code(string $security_code)
+  {
+    // fallback for the security-code
+    if (!$security_code || $security_code = '###set_the_security_key###') {
+      $security_code = 'sEcUrmenadwork_))';
+    }
+
+    $this->security_code = $security_code;
+
+    $this->generate_fingerprint();
 
     return $this;
   }
@@ -733,11 +988,19 @@ class Session2DB implements \SessionHandlerInterface
    */
   public function destroy($session_id): bool
   {
+    // deletes the current locks from the database
+    if ($this->lock_via_mysql === null) {
+      $queryLock = 'DELETE FROM ' . $this->table_name_lock . "
+        WHERE lock_time < '" . $this->db->escape(\time()) . "'
+      ";
+      $this->db->query($queryLock);
+    }
+
+    // deletes the current session id from the database
+
     $query = 'DELETE FROM ' . $this->table_name . "
       WHERE session_id = '" . $this->db->escape($session_id) . "'
     ";
-
-    // deletes the current session id from the database
     $result = $this->db->query($query);
 
     return ($result > 0);
@@ -864,23 +1127,20 @@ class Session2DB implements \SessionHandlerInterface
 
     if ($this->lock_via_mysql === true) {
 
-      $query = "SELECT RELEASE_LOCK('" . $look_name . "') as result";
-      $db_result = $this->db->query($query);
-      $result_lock = $db_result->fetchColumn('result');
+      $result_unlock = $this->_release_lock_sql_nativ($look_name);
+
+    } else if ($this->lock_via_mysql === null) {
+
+      $result_unlock = $this->_release_lock_sql_fake($look_name);
 
     } else {
 
-      $result_lock = false;
-      $lock_file = $this->lock_file_tmp . $look_name;
-      if (\file_exists($lock_file) === true) {
-        /** @noinspection PhpUsageOfSilenceOperatorInspection */
-        $result_lock = @unlink($lock_file);
-      }
+      $result_unlock = $this->_release_lock_php_nativ($look_name);
 
     }
 
     // if there was an error, then stop the execution
-    if (!$result_lock) {
+    if (!$result_unlock) {
       return false;
     }
 
@@ -904,48 +1164,27 @@ class Session2DB implements \SessionHandlerInterface
 
     // try to obtain a lock with the given name and timeout
 
+    $time = \time();
+    $lock_time = (string)($time + $this->lock_timeout);
+    $time = (string)$time;
+    $old_lock_timeout = null;
+
     if ($this->lock_via_mysql === true) {
 
-      $query_lock = "SELECT GET_LOCK('" . $look_name . "', " . $this->db->escape($this->lock_timeout) . ') as result';
-      $db_result = $this->db->query($query_lock);
-      $result_lock = $db_result->fetchColumn('result');
+      $result_lock = $this->_get_lock_mysql_nativ($look_name);
+
+    } else if ($this->lock_via_mysql === null) {
+
+      list($old_lock_timeout, $result_lock) = $this->_get_lock_mysql_fake($look_name, $lock_time);
 
     } else {
 
-      $time = \time();
-      $lock_time = (string)($time + $this->lock_timeout);
-      $time = (string)$time;
-      $lock_file = $this->lock_file_tmp . $look_name;
+      list($old_lock_timeout, $result_lock) = $this->_get_lock_php_nativ($look_name, $lock_time);
 
-      /** @noinspection PhpUsageOfSilenceOperatorInspection */
-      $fp = @fopen($lock_file, 'rb');
-      $old_lock_timeout = '';
-      if ($fp && flock($fp, LOCK_SH | LOCK_NB)) {
-        while (!feof($fp)) {
-          $line = fgets($fp);
-          $old_lock_timeout .= $line;
-        }
-        flock($fp, LOCK_UN);
-      }
-      if ($fp) {
-        fclose($fp);
-      }
+    }
 
-      if ($old_lock_timeout) {
-        return !($old_lock_timeout <= $time);
-      }
-
-      /** @noinspection PhpUsageOfSilenceOperatorInspection */
-      $fp = @fopen($lock_file, 'ab');
-      $result_lock = false;
-      if ($fp && flock($fp, LOCK_EX | LOCK_NB)) {
-        ftruncate($fp, 0);
-        $result_lock = fwrite($fp, $lock_time);
-        fflush($fp);
-        flock($fp, LOCK_UN);
-      }
-      fclose($fp);
-
+    if ($old_lock_timeout) {
+      return ($old_lock_timeout >= $time);
     }
 
     // if there was an error, then stop the execution
@@ -998,11 +1237,11 @@ class Session2DB implements \SessionHandlerInterface
         '" . $this->db->escape($session_id) . "',
         '" . $this->db->escape($hash) . "',
         '" . $this->db->escape($session_data) . "',
-        '" . $this->db->escape(\time() + $this->session_lifetime) . "'
+        '" . $this->db->escape((\time() + (int)$this->session_lifetime)) . "'
       )
       ON DUPLICATE KEY UPDATE
         session_data = '" . $this->db->escape($session_data) . "',
-        session_expire = '" . $this->db->escape(\time() + $this->session_lifetime) . "'
+        session_expire = '" . $this->db->escape((\time() + (int)$this->session_lifetime)) . "'
     ";
 
     // insert OR update session's data
