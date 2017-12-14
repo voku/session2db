@@ -823,7 +823,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return $this
    */
-  public function set_table_name($table_name)
+  public function set_table_name(string $table_name)
   {
     if ($table_name) {
       $this->table_name = $this->db->quote_string($table_name);
@@ -837,7 +837,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return $this
    */
-  public function set_table_name_lock($table_name_lock)
+  public function set_table_name_lock(string $table_name_lock)
   {
     if ($table_name_lock) {
       $this->table_name_lock = $this->db->quote_string($table_name_lock);
@@ -851,7 +851,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return $this
    */
-  public function set_lock_file_tmp($lock_file_tmp)
+  public function set_lock_file_tmp(string $lock_file_tmp)
   {
     if ($lock_file_tmp) {
       $this->lock_file_tmp = $lock_file_tmp;
