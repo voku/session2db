@@ -1,3 +1,11 @@
+# Changelog 3.2.0 (2017-12-14)
+
+* edit "Session2DB->use_lock_via_mysql(bool|null)"
+
+   - true => use mysql GET_LOCK() / RELEASE_LOCK()
+   - false => use php flock() + LOCK_EX
+   - null => use mysql + extra lock-table
+
 # Changelog 3.1.0 (2017-12-14)
 
 * add "Session2DB->use_lock_via_mysql(bool)"
