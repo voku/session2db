@@ -1,8 +1,14 @@
-# Changelog 3.0.0
+# Changelog 3.1.0 (2017-12-14)
+
+* add "Session2DB->use_lock_via_mysql(bool)"
+* use new version of "Simple MySQLi" (voku/simple-mysqli)
+
+# Changelog 3.0.0 (2017-11-25)
 
 * drop support for PHP < 7.0
 * use "strict_types"
 
-# Changelog 2.0.0
+
+# Changelog 2.0.0 (2017-10-15)
 
 * add a interface && a wrapper class for the database-connection
