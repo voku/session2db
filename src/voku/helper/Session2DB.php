@@ -381,8 +381,8 @@ class Session2DB implements \SessionHandlerInterface
     // init
     $result_lock = false;
 
-    $query_lock = "
-    SELECT * FROM " . $this->table_name_lock . " 
+    $query_lock = '
+    SELECT * FROM ' . $this->table_name_lock . " 
       WHERE lock_hash = '" . $this->db->escape($look_name) . "'
       LIMIT 1
     ";
@@ -390,8 +390,8 @@ class Session2DB implements \SessionHandlerInterface
     $old_lock_timeout = $db_result->fetchColumn('lock_time');
 
     if (!$old_lock_timeout) {
-      $query_lock = "
-      INSERT INTO " . $this->table_name_lock . " 
+      $query_lock = '
+      INSERT INTO ' . $this->table_name_lock . " 
         SET 
           lock_hash = '" . $this->db->escape($look_name) . "',
           lock_time = '" . $this->db->escape($lock_time) . "'
@@ -1129,7 +1129,7 @@ class Session2DB implements \SessionHandlerInterface
 
       $result_unlock = $this->_release_lock_sql_nativ($look_name);
 
-    } else if ($this->lock_via_mysql === null) {
+    } elseif ($this->lock_via_mysql === null) {
 
       $result_unlock = $this->_release_lock_sql_fake($look_name);
 
@@ -1173,7 +1173,7 @@ class Session2DB implements \SessionHandlerInterface
 
       $result_lock = $this->_get_lock_mysql_nativ($look_name);
 
-    } else if ($this->lock_via_mysql === null) {
+    } elseif ($this->lock_via_mysql === null) {
 
       list($old_lock_timeout, $result_lock) = $this->_get_lock_mysql_fake($look_name, $lock_time);
 
