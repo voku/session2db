@@ -371,12 +371,12 @@ class Session2DB implements \SessionHandlerInterface
   }
 
   /**
-   * @param $look_name
-   * @param $lock_time
+   * @param string $look_name
+   * @param string $lock_time
    *
    * @return array
    */
-  private function _get_lock_mysql_fake($look_name, $lock_time): array
+  private function _get_lock_mysql_fake(string $look_name, string $lock_time): array
   {
     // init
     $result_lock = false;
@@ -405,26 +405,26 @@ class Session2DB implements \SessionHandlerInterface
   }
 
   /**
-   * @param $look_name
+   * @param string $look_name
    *
-   * @return array|string
+   * @return bool
    */
-  private function _get_lock_mysql_nativ($look_name)
+  private function _get_lock_mysql_nativ($look_name): bool
   {
     $query_lock = "SELECT GET_LOCK('" . $this->db->escape($look_name) . "', " . $this->db->escape($this->lock_timeout) . ') as result';
     $db_result = $this->db->query($query_lock);
-    $result_lock = $db_result->fetchColumn('result');
+    $result_lock = (bool)$db_result->fetchColumn('result');
 
     return $result_lock;
   }
 
   /**
-   * @param $look_name
-   * @param $lock_time
+   * @param string $look_name
+   * @param string $lock_time
    *
    * @return array
    */
-  private function _get_lock_php_nativ($look_name, $lock_time): array
+  private function _get_lock_php_nativ(string $look_name, string $lock_time): array
   {
     // init
     $result_lock = false;
@@ -460,11 +460,11 @@ class Session2DB implements \SessionHandlerInterface
   }
 
   /**
-   * @param $look_name
+   * @param string $look_name
    *
    * @return bool
    */
-  private function _release_lock_php_nativ($look_name): bool
+  private function _release_lock_php_nativ(string $look_name): bool
   {
     $lock_file = $this->lock_file_tmp . $look_name;
     if (\file_exists($lock_file) === true) {
@@ -478,30 +478,30 @@ class Session2DB implements \SessionHandlerInterface
   }
 
   /**
-   * @param $look_name
+   * @param string $look_name
    *
-   * @return bool|false|int|mixed|\voku\db\Result
+   * @return bool
    */
-  private function _release_lock_sql_fake($look_name)
+  private function _release_lock_sql_fake(string $look_name): bool
   {
     $query = 'DELETE FROM ' . $this->table_name_lock . "
         WHERE lock_hash = '" . $this->db->escape($look_name) . "'
       ";
-    $result_unlock = $this->db->query($query);
+    $result_unlock = (bool)$this->db->query($query);
 
     return $result_unlock;
   }
 
   /**
-   * @param $look_name
+   * @param string $look_name
    *
-   * @return array|string
+   * @return bool
    */
-  private function _release_lock_sql_nativ($look_name)
+  private function _release_lock_sql_nativ(string $look_name): bool
   {
     $query = "SELECT RELEASE_LOCK('" . $this->db->escape($look_name) . "') as result";
     $db_result = $this->db->query($query);
-    $result_unlock = $db_result->fetchColumn('result');
+    $result_unlock = (bool)$db_result->fetchColumn('result');
 
     return $result_unlock;
   }
