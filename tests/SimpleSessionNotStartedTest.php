@@ -1,7 +1,6 @@
 <?php
 
 use voku\db\DB;
-use voku\helper\Bootup;
 use voku\helper\DbWrapper4Session;
 use voku\helper\Session2DB;
 
