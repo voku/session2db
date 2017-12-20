@@ -1,18 +1,19 @@
 <?php
 
 use voku\db\DB;
+use voku\helper\Bootup;
 use voku\helper\DbWrapper4Session;
 use voku\helper\Session2DB;
 
 # running from the cli doesn't set $_SESSION
 if (!isset($_SESSION)) {
-  $_SESSION = [];
+  $_SESSION = array();
 }
 
 /**
- * Class SimpleSessionLockViaExtraTableTest
+ * Class SimpleSessionNotStartedTest
  */
-class SimpleSessionLockViaExtraTableTest extends \PHPUnit\Framework\TestCase
+class SimpleSessionNotStartedTest extends \PHPUnit\Framework\TestCase
 {
 
   /**
@@ -43,10 +44,10 @@ class SimpleSessionLockViaExtraTableTest extends \PHPUnit\Framework\TestCase
 
   public function testBasic()
   {
-    $_SESSION['test'] = 1234;
+    $_SESSION['test'] = 123;
     $this->session2DB->write($this->session_id, serialize($_SESSION));
 
-    self::assertSame(1234, $_SESSION['test']);
+    self::assertSame(123, $_SESSION['test']);
 
     // ---
 
@@ -62,14 +63,14 @@ class SimpleSessionLockViaExtraTableTest extends \PHPUnit\Framework\TestCase
   public function testBasic2()
   {
     $data = $this->session2DB->read($this->session_id);
-    $_SESSION = unserialize($data, []);
+    $_SESSION = unserialize($data, array());
 
-    self::assertSame(1234, $_SESSION['test']);
+    self::assertSame(123, $_SESSION['test']);
 
     // ---
 
     $data = $this->session2DB->read($this->session_id);
-    $_SESSION = unserialize($data, []);
+    $_SESSION = unserialize($data, array());
 
     self::assertNull($_SESSION['null']);
   }
@@ -80,33 +81,18 @@ class SimpleSessionLockViaExtraTableTest extends \PHPUnit\Framework\TestCase
   public function testBasic3WithDbCheck()
   {
     $data = $this->session2DB->read($this->session_id);
-    $_SESSION = unserialize($data, []);
+    $_SESSION = unserialize($data, array());
 
-    self::assertSame(1234, $_SESSION['test']);
+    self::assertSame(123, $_SESSION['test']);
 
-    $result = $this->db->getDb()->select('session_data', ['hash' => $this->session2DB->get_fingerprint()]);
+    $result = $this->db->getDb()->select('session_data', array('hash' => $this->session2DB->get_fingerprint()));
     $data = $result->fetchArray();
-    $sessionDataFromDb = unserialize($data['session_data'], []);
-    self::assertSame(1234, $sessionDataFromDb['test']);
+    $sessionDataFromDb = unserialize($data['session_data'], array());
+    self::assertSame(123, $sessionDataFromDb['test']);
   }
 
   /**
    * @depends testBasic3WithDbCheck
-   */
-  public function testFlashdata()
-  {
-    $this->session2DB->set_flashdata('test2', 'lall');
-    self::assertSame('lall', $_SESSION['test2']);
-
-    $this->session2DB->_manage_flashdata();
-    self::assertSame('lall', $_SESSION['test2']);
-
-    $this->session2DB->_manage_flashdata();
-    self::assertFalse(isset($_SESSION['test2']));
-  }
-
-  /**
-   * @depends testFlashdata
    */
   public function testDestroy()
   {
@@ -116,18 +102,7 @@ class SimpleSessionLockViaExtraTableTest extends \PHPUnit\Framework\TestCase
 
     self::assertSame(1, $sessionsCount1);
     self::assertSame(0, $sessionsCount2);
-    self::assertCount(0, $_SESSION);
-  }
-
-  /**
-   * @depends testFlashdata
-   */
-  public function testClose()
-  {
-    $this->session2DB->read($this->session_id); // needed to set the session-id
-
-    $result = $this->session2DB->close();
-    self::assertTrue($result);
+    self::assertCount(2, $_SESSION);
   }
 
   public function setUp()
@@ -141,9 +116,9 @@ class SimpleSessionLockViaExtraTableTest extends \PHPUnit\Framework\TestCase
         1000,
         'session_data',
         60,
-        $this->db
+        $this->db,
+        false
     );
-    $this->session2DB->use_lock_via_mysql(null);
   }
 
 }

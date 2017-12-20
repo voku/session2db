@@ -56,6 +56,9 @@ class SimpleSessionLockViaPhpTest extends \PHPUnit\Framework\TestCase
     self::assertNull($_SESSION['null']);
   }
 
+  /**
+   * @depends testBasic
+   */
   public function testBasic2()
   {
     $data = $this->session2DB->read($this->session_id);
@@ -71,6 +74,9 @@ class SimpleSessionLockViaPhpTest extends \PHPUnit\Framework\TestCase
     self::assertNull($_SESSION['null']);
   }
 
+  /**
+   * @depends testBasic2
+   */
   public function testBasic3WithDbCheck()
   {
     $data = $this->session2DB->read($this->session_id);
@@ -84,6 +90,24 @@ class SimpleSessionLockViaPhpTest extends \PHPUnit\Framework\TestCase
     self::assertSame(1234, $sessionDataFromDb['test']);
   }
 
+  /**
+   * @depends testBasic3WithDbCheck
+   */
+  public function testFlashdata()
+  {
+    $this->session2DB->set_flashdata('test2', 'lall');
+    self::assertSame('lall', $_SESSION['test2']);
+
+    $this->session2DB->_manage_flashdata(); // first call
+    self::assertSame('lall', $_SESSION['test2']);
+
+    $this->session2DB->_manage_flashdata(); // second call
+    self::assertFalse(isset($_SESSION['test2']));
+  }
+
+  /**
+   * @depends testFlashdata
+   */
   public function testDestroy()
   {
     $sessionsCount1 = $this->session2DB->get_active_sessions();
@@ -95,18 +119,9 @@ class SimpleSessionLockViaPhpTest extends \PHPUnit\Framework\TestCase
     self::assertCount(0, $_SESSION);
   }
 
-  public function testFlashdata()
-  {
-    $this->session2DB->set_flashdata('test2', 'lall');
-    self::assertSame('lall', $_SESSION['test2']);
-
-    $this->session2DB->_manage_flashdata();
-    self::assertSame('lall', $_SESSION['test2']);
-
-    $this->session2DB->_manage_flashdata();
-    self::assertFalse(isset($_SESSION['test2']));
-  }
-
+  /**
+   * @depends testDestroy
+   */
   public function testClose()
   {
     $this->session2DB->read($this->session_id); // needed to set the session-id

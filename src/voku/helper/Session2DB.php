@@ -284,8 +284,7 @@ class Session2DB implements \SessionHandlerInterface
    *                                          Default is <i>session_data</i>.
    *
    * @param int             $lock_timeout       [Optional]      The maximum amount of time (in seconds) for which a
-   *                                            lock
-   *                                            on the session data can be kept.
+   *                                            lock on the session data can be kept.
    *
    *                                          <i>This must be lower than the maximum execution time of the script!</i>
    *
@@ -299,8 +298,12 @@ class Session2DB implements \SessionHandlerInterface
    *                                          Default is <i>60</i>
    *
    * @param Db4Session|null $db                 [Optional] A database instance from voku\db\DB ("voku/simple-mysqli")
+   *
+   * @param bool            $start_session      [Optional] If you want to modify the settings via setters before
+   *                                            starting the session, you can skip the session-start and do it manually
+   *                                            via "Session2DB->start()".
    */
-  public function __construct(string $security_code = '', $session_lifetime = 3600, bool $lock_to_user_agent = false, bool $lock_to_ip = false, int $gc_probability = 1, int $gc_divisor = 1000, string $table_name = '', int $lock_timeout = 60, Db4Session $db = null)
+  public function __construct(string $security_code = '', int $session_lifetime = 3600, bool $lock_to_user_agent = false, bool $lock_to_ip = false, int $gc_probability = 1, int $gc_divisor = 1000, string $table_name = '', int $lock_timeout = 60, Db4Session $db = null, bool $start_session = true)
   {
     if (null !== $db) {
       $this->db = $db;
@@ -319,55 +322,74 @@ class Session2DB implements \SessionHandlerInterface
       \trigger_error('Session: No DB-Connection!', E_USER_ERROR);
     }
 
-    $this->overwriteIniSettings($session_lifetime, $gc_probability, $gc_divisor);
-
-    // get session lifetime
-    $this->session_lifetime = \ini_get('session.gc_maxlifetime');
+    $this->set_ini_settings($session_lifetime, $gc_probability, $gc_divisor);
 
     // we'll use this later on in order to try to prevent HTTP_USER_AGENT spoofing
     $this->set_security_code($security_code);
 
     // some other defaults
-    $this->lock_to_user_agent = $lock_to_user_agent;
-    $this->lock_to_ip = $lock_to_ip;
-    $this->lock_file_tmp = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'session2db.lock.';
+    $this->set_lock_to_user_agent($lock_to_user_agent);
+    $this->set_lock_to_ip($lock_to_ip);
+    $this->set_lock_file_tmp(sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'session2db.lock.');
 
     // the table to be used by the class
     $this->set_table_name($table_name);
 
     // the maximum amount of time (in seconds) for which a process can lock the session
-    $this->lock_timeout = $lock_timeout;
+    $this->set_lock_timeout($lock_timeout);
 
-    // generate the fingerprint from the user (user-agent + ip + ...)
-    $this->generate_fingerprint();
+    // initialize session2db
+    if ($start_session === true) {
+      $this->start();
+    }
+  }
 
-    // register the new session-handler
-    $this->register_session_handler();
+  /**
+   * @param string $session_id
+   *
+   * @return bool
+   */
+  private function _get_lock(string $session_id): bool
+  {
+    // skip if we don't use the lock
+    if (!$this->lock_timeout) {
+      return true;
+    }
 
-    // start the session
-    if (PHP_SAPI === 'cli') {
-      $_SESSION = [];
+    // get the lock name, associated with the current session
+    $look_name = $this->_lock_name($session_id);
+
+    // try to obtain a lock with the given name and timeout
+
+    $time = \time();
+    $lock_time = (string)($time + $this->lock_timeout);
+    $time = (string)$time;
+    $old_lock_timeout = null;
+
+    if ($this->lock_via_mysql === true) {
+
+      $result_lock = $this->_get_lock_mysql_native($look_name);
+
+    } elseif ($this->lock_via_mysql === null) {
+
+      list($old_lock_timeout, $result_lock) = $this->_get_lock_mysql_fake($look_name, $lock_time);
+
     } else {
-      \session_start();
+
+      list($old_lock_timeout, $result_lock) = $this->_get_lock_php_native($look_name, $lock_time);
+
     }
 
-    // if there are any flashdata variables that need to be handled
-    if (isset($_SESSION[self::flashDataVarName])) {
-
-      // store them
-      $this->flashdata = \unserialize($_SESSION[self::flashDataVarName], []);
-
-      // and destroy the temporary session variable
-      unset($_SESSION[self::flashDataVarName]);
+    if ($old_lock_timeout) {
+      return ($old_lock_timeout >= $time);
     }
 
-    // handle flashdata after script execution
-    \register_shutdown_function(
-        [
-            $this,
-            '_manage_flashdata',
-        ]
-    );
+    // if there was an error, then stop the execution
+    if (!$result_lock) {
+      return false;
+    }
+
+    return true;
   }
 
   /**
@@ -409,7 +431,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return bool
    */
-  private function _get_lock_mysql_nativ($look_name): bool
+  private function _get_lock_mysql_native($look_name): bool
   {
     $query_lock = "SELECT GET_LOCK('" . $this->db->escape($look_name) . "', " . $this->db->escape($this->lock_timeout) . ') as result';
     $db_result = $this->db->query($query_lock);
@@ -424,7 +446,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return array
    */
-  private function _get_lock_php_nativ(string $look_name, string $lock_time): array
+  private function _get_lock_php_native(string $look_name, string $lock_time): array
   {
     // init
     $result_lock = false;
@@ -460,11 +482,94 @@ class Session2DB implements \SessionHandlerInterface
   }
 
   /**
+   * @param string $session_id
+   *
+   * @return string
+   */
+  private function _lock_name(string $session_id): string
+  {
+    // MySQL >=5.7.5 | the new GET_LOCK implementation has a limit on the identifier name
+    // -> https://bugs.mysql.com/bug.php?id=80721
+    return 'session_' . \sha1($session_id);
+  }
+
+  /**
+   * Manages flashdata behind the scenes.
+   *
+   * @access private
+   */
+  public function _manage_flashdata()
+  {
+    // if there is flashdata to be handled
+    if (!empty($this->flashdata)) {
+
+      // iterate through all the entries
+      foreach ($this->flashdata as $variable => $counter) {
+
+        // increment counter representing server requests
+        $this->flashdata[$variable]++;
+
+        // if we're past the first server request
+        if ($this->flashdata[$variable] > 1) {
+
+          // unset the session variable & stop tracking
+          unset($_SESSION[$variable], $this->flashdata[$variable]);
+        }
+      }
+
+      // if there is any flashdata left to be handled
+      // ... then store data in a temporary session variable
+      if (!empty($this->flashdata)) {
+        $_SESSION[self::flashDataVarName] = \serialize($this->flashdata);
+      }
+    }
+  }
+
+  /**
+   * @param string $session_id
+   *
+   * @return bool
+   */
+  private function _release_lock(string $session_id): bool
+  {
+    // skip if we don't use the lock
+    if (!$this->lock_timeout) {
+      return true;
+    }
+
+    // get the lock name, associated with the current session
+    $look_name = $this->_lock_name($session_id);
+
+    // release the lock associated with the current session
+
+    if ($this->lock_via_mysql === true) {
+
+      $result_unlock = $this->_release_lock_sql_native($look_name);
+
+    } elseif ($this->lock_via_mysql === null) {
+
+      $result_unlock = $this->_release_lock_sql_fake($look_name);
+
+    } else {
+
+      $result_unlock = $this->_release_lock_php_native($look_name);
+
+    }
+
+    // if there was an error, then stop the execution
+    if (!$result_unlock) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
    * @param string $look_name
    *
    * @return bool
    */
-  private function _release_lock_php_nativ(string $look_name): bool
+  private function _release_lock_php_native(string $look_name): bool
   {
     $lock_file = $this->lock_file_tmp . $look_name;
     if (\file_exists($lock_file) === true) {
@@ -497,13 +602,211 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return bool
    */
-  private function _release_lock_sql_nativ(string $look_name): bool
+  private function _release_lock_sql_native(string $look_name): bool
   {
     $query = "SELECT RELEASE_LOCK('" . $this->db->escape($look_name) . "') as result";
     $db_result = $this->db->query($query);
     $result_unlock = (bool)$db_result->fetchColumn('result');
 
     return $result_unlock;
+  }
+
+  /**
+   * Custom close() function.
+   *
+   * @return bool
+   */
+  public function close(): bool
+  {
+    // 1. write all data into the db
+    \session_register_shutdown();
+
+    // 2. release the lock, if there is a lock
+    if ($this->_session_id) {
+      $this->_release_lock($this->_session_id);
+    }
+
+    // 3. close the db-connection
+    $this->db->close();
+
+    return true;
+  }
+
+  /**
+   * Custom destroy() function.
+   *
+   * @param int $session_id
+   *
+   * @return bool
+   */
+  public function destroy($session_id): bool
+  {
+    // deletes the current locks from the database
+    if ($this->lock_via_mysql === null) {
+      $queryLock = 'DELETE FROM ' . $this->table_name_lock . "
+        WHERE lock_time < '" . $this->db->escape(\time()) . "'
+      ";
+      $this->db->query($queryLock);
+    }
+
+    // deletes the current session id from the database
+
+    $query = 'DELETE FROM ' . $this->table_name . "
+      WHERE session_id = '" . $this->db->escape($session_id) . "'
+    ";
+    $result = $this->db->query($query);
+
+    return ($result > 0);
+  }
+
+  /**
+   * Custom gc() function (garbage collector).
+   *
+   * @param int $maxlifetime <p>INFO: must be set for the interface.</P>
+   *
+   * @return int
+   */
+  public function gc($maxlifetime): int
+  {
+    // deletes expired locks from database
+    if ($this->lock_via_mysql === null) {
+      $queryLock = 'DELETE FROM ' . $this->table_name_lock . "
+        WHERE lock_time < '" . $this->db->escape(\time()) . "'
+      ";
+      $this->db->query($queryLock);
+    }
+
+    // deletes expired sessions from database
+
+    $query = 'DELETE FROM ' . $this->table_name . "
+      WHERE session_expire < '" . $this->db->escape(\time()) . "'
+    ";
+
+    return (int)$this->db->query($query);
+  }
+
+  /**
+   * Custom open() function.
+   *
+   * @param string $save_path
+   * @param string $session_name
+   *
+   * @return bool
+   */
+  public function open($save_path, $session_name): bool
+  {
+    // session_regenerate_id() --->
+    //
+    // PHP5: call -> "destroy"
+    //
+    // PHP7: call -> "destroy", "read", "close", "open", "read"
+    //
+    // WARNING: PHP >= 7.0 will reuse $this session-handler-object, so we need to reconnect to the database
+    //
+    if (!$this->db->ping()) {
+      $this->db->reconnect();
+    }
+
+    return $this->db->ping();
+  }
+
+  /**
+   * Custom read() function.
+   *
+   * @param $session_id
+   *
+   * @return string
+   */
+  public function read($session_id): string
+  {
+    // Needed by write() to detect session_regenerate_id() calls
+    $this->_session_id = $session_id;
+
+    // try to obtain a lock with the given name and timeout
+    $locked = $this->_get_lock($session_id);
+
+    // if there was an error, then stop the execution
+    if ($locked === false) {
+      \trigger_error('Session: Could not obtain session lock!', E_USER_ERROR);
+    }
+
+    $hash = $this->get_fingerprint();
+
+    $query = 'SELECT
+        session_data
+      FROM
+        ' . $this->table_name . "
+      WHERE session_id = '" . $this->db->escape($session_id) . "'
+      AND hash = '" . $this->db->escape($hash) . "'
+      AND session_expire > '" . $this->db->escape(\time()) . "'
+      LIMIT 1
+    ";
+
+    $data = $this->db->fetchColumn($query, 'session_data');
+
+    // if anything was found
+    if ($data) {
+      // don't bother with the unserialization - PHP handles this automatically
+      return $data;
+    }
+
+    // on error return an empty string - this HAS to be an empty string
+    return '';
+  }
+
+  /**
+   * Custom write() function.
+   *
+   * @param string $session_id
+   * @param string $session_data
+   *
+   * @return bool|string
+   */
+  public function write($session_id, $session_data)
+  {
+    // check if the "$session_id" was regenerated
+    if (
+        $this->_session_id
+        &&
+        $session_id !== $this->_session_id
+    ) {
+      if (
+          $this->_release_lock($this->_session_id) === false
+          ||
+          $this->_get_lock($session_id) === false
+      ) {
+        return false;
+      }
+
+      $this->_session_id = $session_id;
+    }
+
+    $hash = $this->get_fingerprint();
+
+    $query = 'INSERT INTO
+      ' . $this->table_name . "
+      (
+        session_id,
+        hash,
+        session_data,
+        session_expire
+      )
+      VALUES
+      (
+        '" . $this->db->escape($session_id) . "',
+        '" . $this->db->escape($hash) . "',
+        '" . $this->db->escape($session_data) . "',
+        '" . $this->db->escape((\time() + (int)$this->session_lifetime)) . "'
+      )
+      ON DUPLICATE KEY UPDATE
+        session_data = '" . $this->db->escape($session_data) . "',
+        session_expire = '" . $this->db->escape((\time() + (int)$this->session_lifetime)) . "'
+    ";
+
+    // insert OR update session's data
+    $result = $this->db->query($query);
+
+    return ($result !== false);
   }
 
   private function generate_fingerprint()
@@ -533,6 +836,40 @@ class Session2DB implements \SessionHandlerInterface
   }
 
   /**
+   * Get the number of active sessions - sessions that have not expired.
+   *
+   * <i>The returned value does not represent the exact number of active users as some sessions may be unused
+   * although they haven't expired.</i>
+   *
+   * <code>
+   * // first, connect to a database containing the sessions table
+   *
+   * //  include the class (use the composer-"autoloader")
+   * require 'vendor/autoload.php';
+   *
+   * //  start the session
+   * $session = new Session2DB();
+   *
+   * //  get the (approximate) number of active sessions
+   * $active_sessions = $session->get_active_sessions();
+   * </code>
+   *
+   * @return int <p>Returns the number of active (not expired) sessions.</p>
+   */
+  public function get_active_sessions(): int
+  {
+    // call the garbage collector
+    $this->gc($this->session_lifetime);
+
+    $query = 'SELECT COUNT(session_id) AS count
+      FROM ' . $this->table_name . '
+    ';
+
+    // counts the rows from the database
+    return (int)$this->db->fetchColumn($query, 'count');
+  }
+
+  /**
    * @return string
    */
   public function get_fingerprint(): string
@@ -541,60 +878,75 @@ class Session2DB implements \SessionHandlerInterface
   }
 
   /**
-   * @param int $session_lifetime
-   * @param int $gc_probability
-   * @param int $gc_divisor
+   * Queries the system for the values of <i>session.gc_maxlifetime</i>, <i>session.gc_probability</i> and
+   * <i>session.gc_divisor</i> and returns them as an associative array.
+   *
+   * To view the result in a human-readable format use:
+   * <code>
+   * //  include the class (use the composer-"autoloader")
+   * require 'vendor/autoload.php';
+   *
+   * //  start the session
+   * $session = new Session2DB();
+   *
+   * //  get default settings
+   * print_r('<pre>');
+   * print_r($session->get_settings());
+   *
+   * //  would output something similar to (depending on your actual settings)
+   * //  array
+   * //  (
+   * //    [session.gc_maxlifetime] => 1440 seconds (24 minutes)
+   * //    [session.gc_probability] => 1
+   * //    [session.gc_divisor] => 1000
+   * //    [probability] => 0.1%
+   * //  )
+   * </code>
+   *
+   * @return string[] <p>
+   *                  Returns the values of <i>session.gc_maxlifetime</i>, <i>session.gc_probability</i> and
+   *                  <i>session.gc_divisor</i> as an associative array.
+   *                  </p>
    */
-  private function overwriteIniSettings($session_lifetime, $gc_probability, $gc_divisor)
+  public function get_settings(): array
   {
-    // WARNING: PHP 7.2 throws a warning for "session"-ini, so we catch it here ...
-    if (
-        PHP_SAPI !== 'cli'
-        &&
-        \headers_sent() === true
-    ) {
-      \trigger_error('You cannot change the session module\'s ini settings at this time', E_USER_WARNING);
-    }
+    // get the settings
+    $gc_maxlifetime = \ini_get('session.gc_maxlifetime');
+    $gc_probability = \ini_get('session.gc_probability');
+    $gc_divisor = \ini_get('session.gc_divisor');
 
-    // Prevent session-fixation
-    // See: http://en.wikipedia.org/wiki/Session_fixation
-    //
-    // Tell the browser not to expose the cookie to client side scripting,
-    // this makes it harder for an attacker to hijack the session ID.
-    /** @noinspection PhpUsageOfSilenceOperatorInspection */
-    @\ini_set('session.cookie_httponly', '1');
+    // return them as an array
+    return [
+        'session.gc_maxlifetime' => $gc_maxlifetime . ' seconds (' . \round($gc_maxlifetime / 60) . ' minutes)',
+        'session.gc_probability' => $gc_probability,
+        'session.gc_divisor'     => $gc_divisor,
+        'probability'            => $gc_probability / $gc_divisor * 100 . '%',
+    ];
+  }
 
-    // Make sure that PHP only uses cookies for sessions and disallow session ID passing as a GET parameter,
-    /** @noinspection PhpUsageOfSilenceOperatorInspection */
-    @\ini_set('session.session.use_only_cookies', '1');
-
-    // PHP 7.1 Incompatible Changes
-    // -> http://php.net/manual/en/migration71.incompatible.php
-    if (Bootup::is_php('7.1') === false) {
-      // Use the SHA-1 hashing algorithm
-      /** @noinspection PhpUsageOfSilenceOperatorInspection */
-      @ini_set('session.hash_function', '1');
-
-      // Increase character-range of the session ID to help prevent brute-force attacks.
-      //
-      // INFO: The possible values are '4' (0-9, a-f), '5' (0-9, a-v), and '6' (0-9, a-z, A-Z, "-", ",").
-      /** @noinspection PhpUsageOfSilenceOperatorInspection */
-      @ini_set('session.hash_bits_per_character', '6');
-    }
-
-    // make sure session cookies never expire so that session lifetime
-    // will depend only on the value of $session_lifetime
-    /** @noinspection PhpUsageOfSilenceOperatorInspection */
-    @\ini_set('session.cookie_lifetime', '0');
-
-    /** @noinspection PhpUsageOfSilenceOperatorInspection */
-    @\ini_set('session.gc_maxlifetime', (string)$session_lifetime);
-
-    /** @noinspection PhpUsageOfSilenceOperatorInspection */
-    @\ini_set('session.gc_probability', (string)$gc_probability);
-
-    /** @noinspection PhpUsageOfSilenceOperatorInspection */
-    @\ini_set('session.gc_divisor', (string)$gc_divisor);
+  /**
+   * Regenerates the session id.
+   *
+   * <b>Call this method whenever you do a privilege change in order to prevent session hijacking!</b>
+   *
+   * <code>
+   * // first, connect to a database containing the sessions table
+   *
+   * // include the class (use the composer-"autoloader")
+   * require 'vendor/autoload.php';
+   *
+   * // start the session
+   * $session = new Session2DB();
+   *
+   * // regenerate the session's ID
+   * $session->regenerate_id();
+   * </code>
+   */
+  public function regenerate_id()
+  {
+    // regenerates the id (create a new session with a new id and containing the data from the old session)
+    // also, delete the old session
+    \session_regenerate_id(true);
   }
 
   /**
@@ -652,113 +1004,6 @@ class Session2DB implements \SessionHandlerInterface
   }
 
   /**
-   * Get the number of active sessions - sessions that have not expired.
-   *
-   * <i>The returned value does not represent the exact number of active users as some sessions may be unused
-   * although they haven't expired.</i>
-   *
-   * <code>
-   * // first, connect to a database containing the sessions table
-   *
-   * //  include the class (use the composer-"autoloader")
-   * require 'vendor/autoload.php';
-   *
-   * //  start the session
-   * $session = new Session2DB();
-   *
-   * //  get the (approximate) number of active sessions
-   * $active_sessions = $session->get_active_sessions();
-   * </code>
-   *
-   * @return int <p>Returns the number of active (not expired) sessions.</p>
-   */
-  public function get_active_sessions(): int
-  {
-    // call the garbage collector
-    $this->gc($this->session_lifetime);
-
-    $query = 'SELECT COUNT(session_id) AS count
-      FROM ' . $this->table_name . '
-    ';
-
-    // counts the rows from the database
-    return (int)$this->db->fetchColumn($query, 'count');
-  }
-
-  /**
-   * Custom gc() function (garbage collector).
-   *
-   * @param int $maxlifetime <p>INFO: must be set for the interface.</P>
-   *
-   * @return int
-   */
-  public function gc($maxlifetime): int
-  {
-    // deletes expired locks from database
-    if ($this->lock_via_mysql === null) {
-      $queryLock = 'DELETE FROM ' . $this->table_name_lock . "
-        WHERE lock_time < '" . $this->db->escape(\time()) . "'
-      ";
-      $this->db->query($queryLock);
-    }
-
-    // deletes expired sessions from database
-
-    $query = 'DELETE FROM ' . $this->table_name . "
-      WHERE session_expire < '" . $this->db->escape(\time()) . "'
-    ";
-
-    return (int)$this->db->query($query);
-  }
-
-  /**
-   * Queries the system for the values of <i>session.gc_maxlifetime</i>, <i>session.gc_probability</i> and
-   * <i>session.gc_divisor</i> and returns them as an associative array.
-   *
-   * To view the result in a human-readable format use:
-   * <code>
-   * //  include the class (use the composer-"autoloader")
-   * require 'vendor/autoload.php';
-   *
-   * //  start the session
-   * $session = new Session2DB();
-   *
-   * //  get default settings
-   * print_r('<pre>');
-   * print_r($session->get_settings());
-   *
-   * //  would output something similar to (depending on your actual settings)
-   * //  array
-   * //  (
-   * //    [session.gc_maxlifetime] => 1440 seconds (24 minutes)
-   * //    [session.gc_probability] => 1
-   * //    [session.gc_divisor] => 1000
-   * //    [probability] => 0.1%
-   * //  )
-   * </code>
-   *
-   * @return string[] <p>
-   *                  Returns the values of <i>session.gc_maxlifetime</i>, <i>session.gc_probability</i> and
-   *                  <i>session.gc_divisor</i> as an associative array.
-   *                  </p>
-   */
-  public function get_settings(): array
-  {
-    // get the settings
-    $gc_maxlifetime = \ini_get('session.gc_maxlifetime');
-    $gc_probability = \ini_get('session.gc_probability');
-    $gc_divisor = \ini_get('session.gc_divisor');
-
-    // return them as an array
-    return [
-        'session.gc_maxlifetime' => $gc_maxlifetime . ' seconds (' . \round($gc_maxlifetime / 60) . ' minutes)',
-        'session.gc_probability' => $gc_probability,
-        'session.gc_divisor'     => $gc_divisor,
-        'probability'            => $gc_probability / $gc_divisor * 100 . '%',
-    ];
-  }
-
-  /**
    * Sets a "flashdata" session variable which will only be available for the next server request, and which will be
    * automatically deleted afterwards.
    *
@@ -803,47 +1048,61 @@ class Session2DB implements \SessionHandlerInterface
   }
 
   /**
-   * @param bool|null $boolOrNull <p>
-   *                              <strong>true</strong> => use mysql GET_LOCK() / RELEASE_LOCK()<br>
-   *                              <strong>false</strong> => use php flock() + LOCK_EX<br>
-   *                              <strong>null</strong> => use mysql + extra lock-table<br>
-   *                              </p>
-   *
-   * @return $this
+   * @param int $session_lifetime
+   * @param int $gc_probability
+   * @param int $gc_divisor
    */
-  public function use_lock_via_mysql($boolOrNull)
+  public function set_ini_settings(int $session_lifetime, int $gc_probability, int $gc_divisor)
   {
-    $this->lock_via_mysql = $boolOrNull;
-
-    return $this;
-  }
-
-  /**
-   * @param string $table_name
-   *
-   * @return $this
-   */
-  public function set_table_name(string $table_name)
-  {
-    if ($table_name) {
-      $this->table_name = $this->db->quote_string($table_name);
+    // WARNING: PHP 7.2 throws a warning for "session"-ini, so we catch it here ...
+    if (
+        PHP_SAPI !== 'cli'
+        &&
+        \headers_sent() === true
+    ) {
+      \trigger_error('You cannot change the session module\'s ini settings at this time', E_USER_WARNING);
     }
 
-    return $this;
-  }
+    // Prevent session-fixation
+    // See: http://en.wikipedia.org/wiki/Session_fixation
+    //
+    // Tell the browser not to expose the cookie to client side scripting,
+    // this makes it harder for an attacker to hijack the session ID.
+    /** @noinspection PhpUsageOfSilenceOperatorInspection */
+    @\ini_set('session.cookie_httponly', '1');
 
-  /**
-   * @param string $table_name_lock
-   *
-   * @return $this
-   */
-  public function set_table_name_lock(string $table_name_lock)
-  {
-    if ($table_name_lock) {
-      $this->table_name_lock = $this->db->quote_string($table_name_lock);
+    // Make sure that PHP only uses cookies for sessions and disallow session ID passing as a GET parameter,
+    /** @noinspection PhpUsageOfSilenceOperatorInspection */
+    @\ini_set('session.session.use_only_cookies', '1');
+
+    // PHP 7.1 Incompatible Changes
+    // -> http://php.net/manual/en/migration71.incompatible.php
+    if (Bootup::is_php('7.1') === false) {
+      // Use the SHA-1 hashing algorithm
+      /** @noinspection PhpUsageOfSilenceOperatorInspection */
+      @ini_set('session.hash_function', '1');
+
+      // Increase character-range of the session ID to help prevent brute-force attacks.
+      //
+      // INFO: The possible values are '4' (0-9, a-f), '5' (0-9, a-v), and '6' (0-9, a-z, A-Z, "-", ",").
+      /** @noinspection PhpUsageOfSilenceOperatorInspection */
+      @ini_set('session.hash_bits_per_character', '6');
     }
 
-    return $this;
+    // make sure session cookies never expire so that session lifetime
+    // will depend only on the value of $session_lifetime
+    /** @noinspection PhpUsageOfSilenceOperatorInspection */
+    @\ini_set('session.cookie_lifetime', '0');
+
+    /** @noinspection PhpUsageOfSilenceOperatorInspection */
+    @\ini_set('session.gc_maxlifetime', (string)$session_lifetime);
+    $this->session_lifetime = \ini_get('session.gc_maxlifetime');
+
+    /** @noinspection PhpUsageOfSilenceOperatorInspection */
+    @\ini_set('session.gc_probability', (string)$gc_probability);
+
+    /** @noinspection PhpUsageOfSilenceOperatorInspection */
+    @\ini_set('session.gc_divisor', (string)$gc_divisor);
   }
 
   /**
@@ -920,6 +1179,77 @@ class Session2DB implements \SessionHandlerInterface
   }
 
   /**
+   * @param string $table_name
+   *
+   * @return $this
+   */
+  public function set_table_name(string $table_name)
+  {
+    if ($table_name) {
+      $this->table_name = $this->db->quote_string($table_name);
+    }
+
+    return $this;
+  }
+
+  /**
+   * @param string $table_name_lock
+   *
+   * @return $this
+   */
+  public function set_table_name_lock(string $table_name_lock)
+  {
+    if ($table_name_lock) {
+      $this->table_name_lock = $this->db->quote_string($table_name_lock);
+    }
+
+    return $this;
+  }
+
+  /**
+   * @return bool
+   */
+  public function start(): bool
+  {
+    // register the new session-handler
+    $result = $this->register_session_handler();
+    if ($result === false) {
+      return false;
+    }
+
+    // start the session
+    if (PHP_SAPI === 'cli') {
+      $_SESSION = [];
+      $result = true;
+    } else {
+      $result = \session_start();
+    }
+    if ($result === false) {
+      return false;
+    }
+
+    // if there are any flashdata variables that need to be handled
+    if (isset($_SESSION[self::flashDataVarName])) {
+
+      // store them
+      $this->flashdata = \unserialize($_SESSION[self::flashDataVarName], []);
+
+      // and destroy the temporary session variable
+      unset($_SESSION[self::flashDataVarName]);
+    }
+
+    // handle flashdata after script execution
+    \register_shutdown_function(
+        [
+            $this,
+            '_manage_flashdata',
+        ]
+    );
+
+    return $result;
+  }
+
+  /**
    * Deletes all data related to the session
    *
    * <code>
@@ -955,331 +1285,19 @@ class Session2DB implements \SessionHandlerInterface
   }
 
   /**
-   * Regenerates the session id.
+   * @param bool|null $boolOrNull <p>
+   *                              <strong>true</strong> => use mysql GET_LOCK() / RELEASE_LOCK()<br>
+   *                              <strong>false</strong> => use php flock() + LOCK_EX<br>
+   *                              <strong>null</strong> => use mysql + extra lock-table<br>
+   *                              </p>
    *
-   * <b>Call this method whenever you do a privilege change in order to prevent session hijacking!</b>
-   *
-   * <code>
-   * // first, connect to a database containing the sessions table
-   *
-   * // include the class (use the composer-"autoloader")
-   * require 'vendor/autoload.php';
-   *
-   * // start the session
-   * $session = new Session2DB();
-   *
-   * // regenerate the session's ID
-   * $session->regenerate_id();
-   * </code>
+   * @return $this
    */
-  public function regenerate_id()
+  public function use_lock_via_mysql($boolOrNull)
   {
-    // regenerates the id (create a new session with a new id and containing the data from the old session)
-    // also, delete the old session
-    \session_regenerate_id(true);
-  }
+    $this->lock_via_mysql = $boolOrNull;
 
-  /**
-   * Custom destroy() function.
-   *
-   * @param int $session_id
-   *
-   * @return bool
-   */
-  public function destroy($session_id): bool
-  {
-    // deletes the current locks from the database
-    if ($this->lock_via_mysql === null) {
-      $queryLock = 'DELETE FROM ' . $this->table_name_lock . "
-        WHERE lock_time < '" . $this->db->escape(\time()) . "'
-      ";
-      $this->db->query($queryLock);
-    }
-
-    // deletes the current session id from the database
-
-    $query = 'DELETE FROM ' . $this->table_name . "
-      WHERE session_id = '" . $this->db->escape($session_id) . "'
-    ";
-    $result = $this->db->query($query);
-
-    return ($result > 0);
-  }
-
-  /**
-   * Custom close() function.
-   *
-   * @return bool
-   */
-  public function close(): bool
-  {
-    // 1. write all data into the db
-    \session_register_shutdown();
-
-    // 2. release the lock, if there is a lock
-    if ($this->_session_id) {
-      $this->_release_lock($this->_session_id);
-    }
-
-    // 3. close the db-connection
-    $this->db->close();
-
-    return true;
-  }
-
-  /**
-   * Custom open() function.
-   *
-   * @param string $save_path
-   * @param string $session_name
-   *
-   * @return bool
-   */
-  public function open($save_path, $session_name): bool
-  {
-    // session_regenerate_id() --->
-    //
-    // PHP5: call -> "destroy"
-    //
-    // PHP7: call -> "destroy", "read", "close", "open", "read"
-    //
-    // WARNING: PHP >= 7.0 will reuse $this session-handler-object, so we need to reconnect to the database
-    //
-    if (!$this->db->ping()) {
-      $this->db->reconnect();
-    }
-
-    return $this->db->ping();
-  }
-
-  /**
-   * Custom read() function.
-   *
-   * @param $session_id
-   *
-   * @return string
-   */
-  public function read($session_id): string
-  {
-    // Needed by write() to detect session_regenerate_id() calls
-    $this->_session_id = $session_id;
-
-    // try to obtain a lock with the given name and timeout
-    $locked = $this->_get_lock($session_id);
-
-    // if there was an error, then stop the execution
-    if ($locked === false) {
-      \trigger_error('Session: Could not obtain session lock!', E_USER_ERROR);
-    }
-
-    $hash = $this->get_fingerprint();
-
-    $query = 'SELECT
-        session_data
-      FROM
-        ' . $this->table_name . "
-      WHERE session_id = '" . $this->db->escape($session_id) . "'
-      AND hash = '" . $this->db->escape($hash) . "'
-      AND session_expire > '" . $this->db->escape(\time()) . "'
-      LIMIT 1
-    ";
-
-    $data = $this->db->fetchColumn($query, 'session_data');
-
-    // if anything was found
-    if ($data) {
-      // don't bother with the unserialization - PHP handles this automatically
-      return $data;
-    }
-
-    // on error return an empty string - this HAS to be an empty string
-    return '';
-  }
-
-  /**
-   * @param string $session_id
-   *
-   * @return string
-   */
-  private function _lock_name(string $session_id): string
-  {
-    // MySQL >=5.7.5 | the new GET_LOCK implementation has a limit on the identifier name
-    // -> https://bugs.mysql.com/bug.php?id=80721
-    return 'session_' . \sha1($session_id);
-  }
-
-  /**
-   * @param string $session_id
-   *
-   * @return bool
-   */
-  private function _release_lock(string $session_id): bool
-  {
-    // skip if we don't use the lock
-    if (!$this->lock_timeout) {
-      return true;
-    }
-
-    // get the lock name, associated with the current session
-    $look_name = $this->_lock_name($session_id);
-
-    // release the lock associated with the current session
-
-    if ($this->lock_via_mysql === true) {
-
-      $result_unlock = $this->_release_lock_sql_nativ($look_name);
-
-    } elseif ($this->lock_via_mysql === null) {
-
-      $result_unlock = $this->_release_lock_sql_fake($look_name);
-
-    } else {
-
-      $result_unlock = $this->_release_lock_php_nativ($look_name);
-
-    }
-
-    // if there was an error, then stop the execution
-    if (!$result_unlock) {
-      return false;
-    }
-
-    return true;
-  }
-
-  /**
-   * @param string $session_id
-   *
-   * @return bool
-   */
-  private function _get_lock(string $session_id): bool
-  {
-    // skip if we don't use the lock
-    if (!$this->lock_timeout) {
-      return true;
-    }
-
-    // get the lock name, associated with the current session
-    $look_name = $this->_lock_name($session_id);
-
-    // try to obtain a lock with the given name and timeout
-
-    $time = \time();
-    $lock_time = (string)($time + $this->lock_timeout);
-    $time = (string)$time;
-    $old_lock_timeout = null;
-
-    if ($this->lock_via_mysql === true) {
-
-      $result_lock = $this->_get_lock_mysql_nativ($look_name);
-
-    } elseif ($this->lock_via_mysql === null) {
-
-      list($old_lock_timeout, $result_lock) = $this->_get_lock_mysql_fake($look_name, $lock_time);
-
-    } else {
-
-      list($old_lock_timeout, $result_lock) = $this->_get_lock_php_nativ($look_name, $lock_time);
-
-    }
-
-    if ($old_lock_timeout) {
-      return ($old_lock_timeout >= $time);
-    }
-
-    // if there was an error, then stop the execution
-    if (!$result_lock) {
-      return false;
-    }
-
-    return true;
-  }
-
-  /**
-   * Custom write() function.
-   *
-   * @param string $session_id
-   * @param string $session_data
-   *
-   * @return bool|string
-   */
-  public function write($session_id, $session_data)
-  {
-    // check if the "$session_id" was regenerated
-    if (
-        $this->_session_id
-        &&
-        $session_id !== $this->_session_id
-    ) {
-      if (
-          $this->_release_lock($this->_session_id) === false
-          ||
-          $this->_get_lock($session_id) === false
-      ) {
-        return false;
-      }
-
-      $this->_session_id = $session_id;
-    }
-
-    $hash = $this->get_fingerprint();
-
-    $query = 'INSERT INTO
-      ' . $this->table_name . "
-      (
-        session_id,
-        hash,
-        session_data,
-        session_expire
-      )
-      VALUES
-      (
-        '" . $this->db->escape($session_id) . "',
-        '" . $this->db->escape($hash) . "',
-        '" . $this->db->escape($session_data) . "',
-        '" . $this->db->escape((\time() + (int)$this->session_lifetime)) . "'
-      )
-      ON DUPLICATE KEY UPDATE
-        session_data = '" . $this->db->escape($session_data) . "',
-        session_expire = '" . $this->db->escape((\time() + (int)$this->session_lifetime)) . "'
-    ";
-
-    // insert OR update session's data
-    $result = $this->db->query($query);
-
-    return ($result !== false);
-  }
-
-  /**
-   * Manages flashdata behind the scenes.
-   *
-   * @access private
-   */
-  public function _manage_flashdata()
-  {
-    // if there is flashdata to be handled
-    if (!empty($this->flashdata)) {
-
-      // iterate through all the entries
-      foreach ($this->flashdata as $variable => $counter) {
-
-        // increment counter representing server requests
-        $this->flashdata[$variable]++;
-
-        // if we're past the first server request
-        if ($this->flashdata[$variable] > 1) {
-
-          // unset the session variable & stop tracking
-          unset($_SESSION[$variable], $this->flashdata[$variable]);
-        }
-      }
-
-      // if there is any flashdata left to be handled
-      // ... then store data in a temporary session variable
-      if (!empty($this->flashdata)) {
-        $_SESSION[self::flashDataVarName] = \serialize($this->flashdata);
-      }
-    }
+    return $this;
   }
 
 }

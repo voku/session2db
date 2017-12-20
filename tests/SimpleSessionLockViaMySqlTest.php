@@ -58,6 +58,9 @@ class SimpleSessionLockViaMySqlTest extends \PHPUnit\Framework\TestCase
     self::assertContains('%', $settings['probability']);
   }
 
+  /**
+   * @depends testGetSettings
+   */
   public function testBasic()
   {
     $_SESSION['test'] = 123;
@@ -73,6 +76,9 @@ class SimpleSessionLockViaMySqlTest extends \PHPUnit\Framework\TestCase
     self::assertNull($_SESSION['null']);
   }
 
+  /**
+   * @depends testBasic
+   */
   public function testBasic2()
   {
     $data = $this->session2DB->read($this->session_id);
@@ -88,6 +94,9 @@ class SimpleSessionLockViaMySqlTest extends \PHPUnit\Framework\TestCase
     self::assertNull($_SESSION['null']);
   }
 
+  /**
+   * @depends testBasic2
+   */
   public function testBasic3WithDbCheck()
   {
     $data = $this->session2DB->read($this->session_id);
@@ -101,17 +110,9 @@ class SimpleSessionLockViaMySqlTest extends \PHPUnit\Framework\TestCase
     self::assertSame(123, $sessionDataFromDb['test']);
   }
 
-  public function testDestroy()
-  {
-    $sessionsCount1 = $this->session2DB->get_active_sessions();
-    $this->session2DB->destroy($this->session_id);
-    $sessionsCount2 = $this->session2DB->get_active_sessions();
-
-    self::assertSame(1, $sessionsCount1);
-    self::assertSame(0, $sessionsCount2);
-    self::assertCount(0, $_SESSION);
-  }
-
+  /**
+   * @depends testBasic3WithDbCheck
+   */
   public function testFlashdata()
   {
     $this->session2DB->set_flashdata('test2', 'lall');
@@ -124,6 +125,23 @@ class SimpleSessionLockViaMySqlTest extends \PHPUnit\Framework\TestCase
     self::assertFalse(isset($_SESSION['test2']));
   }
 
+  /**
+   * @depends testFlashdata
+   */
+  public function testDestroy()
+  {
+    $sessionsCount1 = $this->session2DB->get_active_sessions();
+    $this->session2DB->destroy($this->session_id);
+    $sessionsCount2 = $this->session2DB->get_active_sessions();
+
+    self::assertSame(1, $sessionsCount1);
+    self::assertSame(0, $sessionsCount2);
+    self::assertCount(0, $_SESSION);
+  }
+
+  /**
+   * @depends testDestroy
+   */
   public function testClose()
   {
     $this->session2DB->read($this->session_id); // needed to set the session-id
@@ -148,8 +166,11 @@ class SimpleSessionLockViaMySqlTest extends \PHPUnit\Framework\TestCase
         1000,
         'session_data',
         60,
-        $this->db
+        $this->db,
+        false
     );
+
+    $this->session2DB->start();
   }
 
 }

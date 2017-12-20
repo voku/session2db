@@ -82,27 +82,25 @@ After installing, you will need to initialise the database table from the *insta
         true,       // e.g. true|false (exit_on_error)
         true,       // e.g. true|false (echo_on_error)
         '',         // e.g. 'framework\Logger' (logger_class_name)
-        '',         // e.g. 'DEBUG' (logger_level)
-        array(
-            'session_to_db' => true,
-        )
+        ''          // e.g. 'DEBUG' (logger_level)
     );
     
     // you can also use you own database implementation via the "Db4Session"-interface,
     // take a look at the "DbWrapper4Session"-class for a example
-    $dbWrapper = new DbWrapper4Session($db);
+    $db_wrapper = new DbWrapper4Session($db);
     
     // initialize "Session to DB"
     new Session2DB(
       'add_your_own_security_code_here', // security_code
-      '',                                // session_lifetime
+      0,                                 // session_lifetime
       false,                             // lock_to_user_agent 
       false,                             // lock_to_ip
       1,                                 // gc_probability 
       1000,                              // gc_divisor 
       'session_data',                    // table_name
       60,                                // lock_timeout 
-      $dbWrapper                         // db (must implement the "Db4Session"-interface)
+      $db_wrapper,                       // db (must implement the "Db4Session"-interface)
+      true                               // start_session (start the session-handling automatically, otherwise you need to use session2db->start() afterwards)
     );
 
     // from now on, use sessions as you would normally
