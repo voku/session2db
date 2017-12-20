@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace voku\helper;
 
 /**
@@ -35,7 +33,7 @@ namespace voku\helper;
  * @license http://www.gnu.org/licenses/lgpl-3.0.txt GNU LESSER GENERAL PUBLIC LICENSE
  * @package voku\helper
  */
-class Session2DB implements \SessionHandlerInterface
+class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
 {
   /**
    * the name for the session variable that will be created upon script execution
@@ -54,7 +52,7 @@ class Session2DB implements \SessionHandlerInterface
   /**
    * @var array
    */
-  private $flashdata = [];
+  private $flashdata = array();
 
   /*
    * @var int
@@ -303,7 +301,7 @@ class Session2DB implements \SessionHandlerInterface
    *                                            starting the session, you can skip the session-start and do it manually
    *                                            via "Session2DB->start()".
    */
-  public function __construct(string $security_code = '', int $session_lifetime = 3600, bool $lock_to_user_agent = false, bool $lock_to_ip = false, int $gc_probability = 1, int $gc_divisor = 1000, string $table_name = '', int $lock_timeout = 60, Db4Session $db = null, bool $start_session = true)
+  public function __construct($security_code = '', $session_lifetime = 3600, $lock_to_user_agent = false, $lock_to_ip = false, $gc_probability = 1, $gc_divisor = 1000, $table_name = '', $lock_timeout = 60, Db4Session $db = null, $start_session = true)
   {
     if (null !== $db) {
       $this->db = $db;
@@ -349,7 +347,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return bool
    */
-  private function _get_lock(string $session_id): bool
+  private function _get_lock($session_id)
   {
     // skip if we don't use the lock
     if (!$this->lock_timeout) {
@@ -398,7 +396,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return array
    */
-  private function _get_lock_mysql_fake(string $look_name, string $lock_time): array
+  private function _get_lock_mysql_fake($look_name, $lock_time)
   {
     // init
     $result_lock = false;
@@ -423,7 +421,7 @@ class Session2DB implements \SessionHandlerInterface
       }
     }
 
-    return [$old_lock_timeout, $result_lock];
+    return array($old_lock_timeout, $result_lock);
   }
 
   /**
@@ -431,7 +429,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return bool
    */
-  private function _get_lock_mysql_native($look_name): bool
+  private function _get_lock_mysql_native($look_name)
   {
     $query_lock = "SELECT GET_LOCK('" . $this->db->escape($look_name) . "', " . $this->db->escape($this->lock_timeout) . ') as result';
     $db_result = $this->db->query($query_lock);
@@ -446,7 +444,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return array
    */
-  private function _get_lock_php_native(string $look_name, string $lock_time): array
+  private function _get_lock_php_native($look_name, $lock_time)
   {
     // init
     $result_lock = false;
@@ -478,7 +476,7 @@ class Session2DB implements \SessionHandlerInterface
       fclose($fp);
     }
 
-    return [$old_lock_timeout, $result_lock];
+    return array($old_lock_timeout, $result_lock);
   }
 
   /**
@@ -486,7 +484,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return string
    */
-  private function _lock_name(string $session_id): string
+  private function _lock_name($session_id)
   {
     // MySQL >=5.7.5 | the new GET_LOCK implementation has a limit on the identifier name
     // -> https://bugs.mysql.com/bug.php?id=80721
@@ -530,7 +528,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return bool
    */
-  private function _release_lock(string $session_id): bool
+  private function _release_lock($session_id)
   {
     // skip if we don't use the lock
     if (!$this->lock_timeout) {
@@ -569,7 +567,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return bool
    */
-  private function _release_lock_php_native(string $look_name): bool
+  private function _release_lock_php_native($look_name)
   {
     $lock_file = $this->lock_file_tmp . $look_name;
     if (\file_exists($lock_file) === true) {
@@ -587,7 +585,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return bool
    */
-  private function _release_lock_sql_fake(string $look_name): bool
+  private function _release_lock_sql_fake($look_name)
   {
     $query = 'DELETE FROM ' . $this->table_name_lock . "
         WHERE lock_hash = '" . $this->db->escape($look_name) . "'
@@ -602,7 +600,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return bool
    */
-  private function _release_lock_sql_native(string $look_name): bool
+  private function _release_lock_sql_native($look_name)
   {
     $query = "SELECT RELEASE_LOCK('" . $this->db->escape($look_name) . "') as result";
     $db_result = $this->db->query($query);
@@ -616,7 +614,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return bool
    */
-  public function close(): bool
+  public function close()
   {
     // 1. write all data into the db
     \session_register_shutdown();
@@ -639,7 +637,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return bool
    */
-  public function destroy($session_id): bool
+  public function destroy($session_id)
   {
     // deletes the current locks from the database
     if ($this->lock_via_mysql === null) {
@@ -666,7 +664,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return int
    */
-  public function gc($maxlifetime): int
+  public function gc($maxlifetime)
   {
     // deletes expired locks from database
     if ($this->lock_via_mysql === null) {
@@ -693,7 +691,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return bool
    */
-  public function open($save_path, $session_name): bool
+  public function open($save_path, $session_name)
   {
     // session_regenerate_id() --->
     //
@@ -717,7 +715,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return string
    */
-  public function read($session_id): string
+  public function read($session_id)
   {
     // Needed by write() to detect session_regenerate_id() calls
     $this->_session_id = $session_id;
@@ -856,7 +854,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return int <p>Returns the number of active (not expired) sessions.</p>
    */
-  public function get_active_sessions(): int
+  public function get_active_sessions()
   {
     // call the garbage collector
     $this->gc($this->session_lifetime);
@@ -872,7 +870,7 @@ class Session2DB implements \SessionHandlerInterface
   /**
    * @return string
    */
-  public function get_fingerprint(): string
+  public function get_fingerprint()
   {
     return $this->_fingerprint;
   }
@@ -908,7 +906,7 @@ class Session2DB implements \SessionHandlerInterface
    *                  <i>session.gc_divisor</i> as an associative array.
    *                  </p>
    */
-  public function get_settings(): array
+  public function get_settings()
   {
     // get the settings
     $gc_maxlifetime = \ini_get('session.gc_maxlifetime');
@@ -916,12 +914,12 @@ class Session2DB implements \SessionHandlerInterface
     $gc_divisor = \ini_get('session.gc_divisor');
 
     // return them as an array
-    return [
+    return array(
         'session.gc_maxlifetime' => $gc_maxlifetime . ' seconds (' . \round($gc_maxlifetime / 60) . ' minutes)',
         'session.gc_probability' => $gc_probability,
         'session.gc_divisor'     => $gc_divisor,
         'probability'            => $gc_probability / $gc_divisor * 100 . '%',
-    ];
+    );
   }
 
   /**
@@ -952,7 +950,7 @@ class Session2DB implements \SessionHandlerInterface
   /**
    * @return bool
    */
-  private function register_session_handler(): bool
+  private function register_session_handler()
   {
     // WARNING: PHP 7.2 throws a warning for "session"-ini, so we catch it here ...
     if (
@@ -970,30 +968,30 @@ class Session2DB implements \SessionHandlerInterface
 
     /** @noinspection PhpUsageOfSilenceOperatorInspection */
     $results = @\session_set_save_handler(
-        [
+        array(
             &$this,
             'open',
-        ],
-        [
+        ),
+        array(
             &$this,
             'close',
-        ],
-        [
+        ),
+        array(
             &$this,
             'read',
-        ],
-        [
+        ),
+        array(
             &$this,
             'write',
-        ],
-        [
+        ),
+        array(
             &$this,
             'destroy',
-        ],
-        [
+        ),
+        array(
             &$this,
             'gc',
-        ]
+        )
     );
 
     if (!$results) {
@@ -1040,7 +1038,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return $this
    */
-  public function set_flashdata(string $name, $value): self
+  public function set_flashdata($name, $value)
   {
     // set session variable
     $_SESSION[$name] = $value;
@@ -1058,7 +1056,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return $this
    */
-  public function set_ini_settings(int $session_lifetime, int $gc_probability, int $gc_divisor): self
+  public function set_ini_settings($session_lifetime, $gc_probability, $gc_divisor)
   {
     // WARNING: PHP 7.2 throws a warning for "session"-ini, so we catch it here ...
     if (
@@ -1118,7 +1116,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return $this
    */
-  public function set_lock_file_tmp(string $lock_file_tmp): self
+  public function set_lock_file_tmp($lock_file_tmp)
   {
     if ($lock_file_tmp) {
       $this->lock_file_tmp = $lock_file_tmp;
@@ -1132,7 +1130,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return $this
    */
-  public function set_lock_timeout(int $lock_timeout): self
+  public function set_lock_timeout($lock_timeout)
   {
     $this->lock_timeout = $lock_timeout;
 
@@ -1144,7 +1142,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return $this
    */
-  public function set_lock_to_ip(bool $lock_to_ip): self
+  public function set_lock_to_ip($lock_to_ip)
   {
     $this->lock_to_ip = $lock_to_ip;
 
@@ -1158,7 +1156,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return $this
    */
-  public function set_lock_to_user_agent(bool $lock_to_user_agent): self
+  public function set_lock_to_user_agent($lock_to_user_agent)
   {
     $this->lock_to_user_agent = $lock_to_user_agent;
 
@@ -1172,7 +1170,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return $this
    */
-  public function set_security_code(string $security_code): self
+  public function set_security_code($security_code)
   {
     // fallback for the security-code
     if (!$security_code || $security_code = '###set_the_security_key###') {
@@ -1191,7 +1189,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return $this
    */
-  public function set_table_name(string $table_name): self
+  public function set_table_name($table_name)
   {
     if ($table_name) {
       $this->table_name = $this->db->quote_string($table_name);
@@ -1205,7 +1203,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return $this
    */
-  public function set_table_name_lock(string $table_name_lock): self
+  public function set_table_name_lock($table_name_lock)
   {
     if ($table_name_lock) {
       $this->table_name_lock = $this->db->quote_string($table_name_lock);
@@ -1217,7 +1215,7 @@ class Session2DB implements \SessionHandlerInterface
   /**
    * @return bool
    */
-  public function start(): bool
+  public function start()
   {
     // register the new session-handler
     $result = $this->register_session_handler();
@@ -1227,7 +1225,7 @@ class Session2DB implements \SessionHandlerInterface
 
     // start the session
     if (PHP_SAPI === 'cli') {
-      $_SESSION = [];
+      $_SESSION = array();
       $result = true;
     } else {
       $result = \session_start();
@@ -1240,7 +1238,7 @@ class Session2DB implements \SessionHandlerInterface
     if (isset($_SESSION[self::flashDataVarName])) {
 
       // store them
-      $this->flashdata = \unserialize($_SESSION[self::flashDataVarName], []);
+      $this->flashdata = \unserialize($_SESSION[self::flashDataVarName], array());
 
       // and destroy the temporary session variable
       unset($_SESSION[self::flashDataVarName]);
@@ -1248,10 +1246,10 @@ class Session2DB implements \SessionHandlerInterface
 
     // handle flashdata after script execution
     \register_shutdown_function(
-        [
+        array(
             $this,
             '_manage_flashdata',
-        ]
+        )
     );
 
     return $result;
@@ -1301,7 +1299,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return $this
    */
-  public function use_lock_via_mysql($boolOrNull): self
+  public function use_lock_via_mysql($boolOrNull)
   {
     $this->lock_via_mysql = $boolOrNull;
 

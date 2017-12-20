@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace voku\helper;
 
 interface Db4Session
@@ -10,7 +8,7 @@ interface Db4Session
   /**
    * @return bool
    */
-  public function close(): bool;
+  public function close();
 
   /**
    * @param mixed $var
@@ -25,29 +23,29 @@ interface Db4Session
    *
    * @return array|string <p>empty string on error</p>
    */
-  public function fetchColumn(string $sql, string $string);
+  public function fetchColumn($sql, $string);
 
   /**
    * @return bool
    */
-  public function ping(): bool;
+  public function ping();
 
   /**
    * @param string $sql
    *
    * @return mixed|false <p>false on error</p>
    */
-  public function query(string $sql);
+  public function query($sql);
 
   /**
    * @param string $string
    *
    * @return string
    */
-  public function quote_string(string $string): string;
+  public function quote_string($string);
 
   /**
    * @return bool
    */
-  public function reconnect(): bool;
+  public function reconnect();
 }

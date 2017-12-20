@@ -77,14 +77,14 @@ class SimpleSessionLockViaMySqlTest extends \PHPUnit\Framework\TestCase
   public function testBasic2()
   {
     $data = $this->session2DB->read($this->session_id);
-    $_SESSION = unserialize($data, []);
+    $_SESSION = unserialize($data, array());
 
     self::assertSame(123, $_SESSION['test']);
 
     // ---
 
     $data = $this->session2DB->read($this->session_id);
-    $_SESSION = unserialize($data, []);
+    $_SESSION = unserialize($data, array());
 
     self::assertNull($_SESSION['null']);
   }
@@ -95,13 +95,13 @@ class SimpleSessionLockViaMySqlTest extends \PHPUnit\Framework\TestCase
   public function testBasic3WithDbCheck()
   {
     $data = $this->session2DB->read($this->session_id);
-    $_SESSION = unserialize($data, []);
+    $_SESSION = unserialize($data, array());
 
     self::assertSame(123, $_SESSION['test']);
 
-    $result = $this->db->getDb()->select('session_data', ['hash' => $this->session2DB->get_fingerprint()]);
+    $result = $this->db->getDb()->select('session_data', array('hash' => $this->session2DB->get_fingerprint()));
     $data = $result->fetchArray();
-    $sessionDataFromDb = unserialize($data['session_data'], []);
+    $sessionDataFromDb = unserialize($data['session_data'], array());
     self::assertSame(123, $sessionDataFromDb['test']);
   }
 
@@ -152,7 +152,7 @@ class SimpleSessionLockViaMySqlTest extends \PHPUnit\Framework\TestCase
 
   public function setUp()
   {
-    $_SESSION = [];
+    $_SESSION = array();
 
     $this->session2DB = new Session2DB(
         'teste21321_!!',
