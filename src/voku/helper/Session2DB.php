@@ -1238,7 +1238,7 @@ class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
     if (isset($_SESSION[self::flashDataVarName])) {
 
       // store them
-      $this->flashdata = \unserialize($_SESSION[self::flashDataVarName], array());
+      $this->flashdata = \unserialize($_SESSION[self::flashDataVarName]);
 
       // and destroy the temporary session variable
       unset($_SESSION[self::flashDataVarName]);

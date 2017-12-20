@@ -57,14 +57,14 @@ class SimpleSessionNotStartedTest extends \PHPUnit\Framework\TestCase
   public function testBasic2()
   {
     $data = $this->session2DB->read($this->session_id);
-    $_SESSION = unserialize($data, array());
+    $_SESSION = unserialize($data);
 
     self::assertSame(123, $_SESSION['test']);
 
     // ---
 
     $data = $this->session2DB->read($this->session_id);
-    $_SESSION = unserialize($data, array());
+    $_SESSION = unserialize($data);
 
     self::assertNull($_SESSION['null']);
   }
@@ -75,13 +75,13 @@ class SimpleSessionNotStartedTest extends \PHPUnit\Framework\TestCase
   public function testBasic3WithDbCheck()
   {
     $data = $this->session2DB->read($this->session_id);
-    $_SESSION = unserialize($data, array());
+    $_SESSION = unserialize($data);
 
     self::assertSame(123, $_SESSION['test']);
 
     $result = $this->db->getDb()->select('session_data', array('hash' => $this->session2DB->get_fingerprint()));
     $data = $result->fetchArray();
-    $sessionDataFromDb = unserialize($data['session_data'], array());
+    $sessionDataFromDb = unserialize($data['session_data']);
     self::assertSame(123, $sessionDataFromDb['test']);
   }
 
