@@ -27,7 +27,7 @@ The code is heavily commented and generates no warnings/errors/notices when PHP'
 
 ## Requirements
 
-PHP 7.x with the **mysqli extension** activated, MySQL 5.x+ (recommanded: **mysqlnd extension**)
+PHP 5.3+ with the **mysqli extension** activated, MySQL 5.x+ (recommanded: **mysqlnd extension**)
 
 ## How to install
 
