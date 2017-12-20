@@ -93,10 +93,10 @@ class SimpleSessionLockViaExtraTableTest extends \PHPUnit\Framework\TestCase
     $this->session2DB->set_flashdata('test2', 'lall');
     self::assertSame('lall', $_SESSION['test2']);
 
-    $this->session2DB->_manage_flashdata();
+    $this->session2DB->_manage_flashdata(); // first call
     self::assertSame('lall', $_SESSION['test2']);
 
-    $this->session2DB->_manage_flashdata();
+    $this->session2DB->_manage_flashdata(); // second call
     self::assertFalse(isset($_SESSION['test2']));
   }
 
@@ -115,7 +115,7 @@ class SimpleSessionLockViaExtraTableTest extends \PHPUnit\Framework\TestCase
   }
 
   /**
-   * @depends testFlashdata
+   * @depends testDestroy
    */
   public function testClose()
   {
@@ -127,6 +127,8 @@ class SimpleSessionLockViaExtraTableTest extends \PHPUnit\Framework\TestCase
 
   public function setUp()
   {
+    $_SESSION = [];
+
     $this->session2DB = new Session2DB(
         'teste21321_!!',
         3600,
