@@ -4,11 +4,6 @@ use voku\db\DB;
 use voku\helper\DbWrapper4Session;
 use voku\helper\Session2DB;
 
-# running from the cli doesn't set $_SESSION
-if (!isset($_SESSION)) {
-  $_SESSION = [];
-}
-
 /**
  * Class SimpleSessionLockViaPhpTest
  */
@@ -132,6 +127,8 @@ class SimpleSessionLockViaPhpTest extends \PHPUnit\Framework\TestCase
 
   public function setUp()
   {
+    $_SESSION = [];
+
     $this->session2DB = new Session2DB(
         'teste21321_!!',
         3600,

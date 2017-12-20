@@ -4,11 +4,6 @@ use voku\db\DB;
 use voku\helper\DbWrapper4Session;
 use voku\helper\Session2DB;
 
-# running from the cli doesn't set $_SESSION
-if (!isset($_SESSION)) {
-  $_SESSION = [];
-}
-
 /**
  * Class SimpleSessionLockViaExtraTableTest
  */

@@ -1037,22 +1037,28 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @param string $name  <p>The name of the session variable.</p>
    * @param mixed  $value <p>The value of the session variable.</p>
+   *
+   * @return $this
    */
-  public function set_flashdata(string $name, $value)
+  public function set_flashdata(string $name, $value): self
   {
     // set session variable
     $_SESSION[$name] = $value;
 
     // initialize the counter for this flashdata
     $this->flashdata[$name] = 0;
+
+    return $this;
   }
 
   /**
    * @param int $session_lifetime
    * @param int $gc_probability
    * @param int $gc_divisor
+   *
+   * @return $this
    */
-  public function set_ini_settings(int $session_lifetime, int $gc_probability, int $gc_divisor)
+  public function set_ini_settings(int $session_lifetime, int $gc_probability, int $gc_divisor): self
   {
     // WARNING: PHP 7.2 throws a warning for "session"-ini, so we catch it here ...
     if (
@@ -1103,6 +1109,8 @@ class Session2DB implements \SessionHandlerInterface
 
     /** @noinspection PhpUsageOfSilenceOperatorInspection */
     @\ini_set('session.gc_divisor', (string)$gc_divisor);
+
+    return $this;
   }
 
   /**
@@ -1110,7 +1118,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return $this
    */
-  public function set_lock_file_tmp(string $lock_file_tmp)
+  public function set_lock_file_tmp(string $lock_file_tmp): self
   {
     if ($lock_file_tmp) {
       $this->lock_file_tmp = $lock_file_tmp;
@@ -1124,7 +1132,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return $this
    */
-  public function set_lock_timeout(int $lock_timeout)
+  public function set_lock_timeout(int $lock_timeout): self
   {
     $this->lock_timeout = $lock_timeout;
 
@@ -1136,7 +1144,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return $this
    */
-  public function set_lock_to_ip(bool $lock_to_ip)
+  public function set_lock_to_ip(bool $lock_to_ip): self
   {
     $this->lock_to_ip = $lock_to_ip;
 
@@ -1150,7 +1158,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return $this
    */
-  public function set_lock_to_user_agent(bool $lock_to_user_agent)
+  public function set_lock_to_user_agent(bool $lock_to_user_agent): self
   {
     $this->lock_to_user_agent = $lock_to_user_agent;
 
@@ -1164,7 +1172,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return $this
    */
-  public function set_security_code(string $security_code)
+  public function set_security_code(string $security_code): self
   {
     // fallback for the security-code
     if (!$security_code || $security_code = '###set_the_security_key###') {
@@ -1183,7 +1191,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return $this
    */
-  public function set_table_name(string $table_name)
+  public function set_table_name(string $table_name): self
   {
     if ($table_name) {
       $this->table_name = $this->db->quote_string($table_name);
@@ -1197,7 +1205,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return $this
    */
-  public function set_table_name_lock(string $table_name_lock)
+  public function set_table_name_lock(string $table_name_lock): self
   {
     if ($table_name_lock) {
       $this->table_name_lock = $this->db->quote_string($table_name_lock);
@@ -1293,7 +1301,7 @@ class Session2DB implements \SessionHandlerInterface
    *
    * @return $this
    */
-  public function use_lock_via_mysql($boolOrNull)
+  public function use_lock_via_mysql($boolOrNull): self
   {
     $this->lock_via_mysql = $boolOrNull;
 

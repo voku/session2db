@@ -1,3 +1,11 @@
+# Chanelog 3.3.0 (2017-12-20)
+
+* use more php7 type-hints
+* add "$start_session" to the "Session2DB"-constructor
+
+-> If you want to modify the settings via setters before  starting the session, you can skip the session-start and do it manually via "Session2DB->start()"
+
+
 # Changelog 3.2.1 (2017-12-14)
 
 * use php7 type-hints

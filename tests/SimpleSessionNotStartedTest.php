@@ -1,14 +1,8 @@
 <?php
 
 use voku\db\DB;
-use voku\helper\Bootup;
 use voku\helper\DbWrapper4Session;
 use voku\helper\Session2DB;
-
-# running from the cli doesn't set $_SESSION
-if (!isset($_SESSION)) {
-  $_SESSION = array();
-}
 
 /**
  * Class SimpleSessionNotStartedTest
@@ -63,14 +57,14 @@ class SimpleSessionNotStartedTest extends \PHPUnit\Framework\TestCase
   public function testBasic2()
   {
     $data = $this->session2DB->read($this->session_id);
-    $_SESSION = unserialize($data, array());
+    $_SESSION = unserialize($data, []);
 
     self::assertSame(123, $_SESSION['test']);
 
     // ---
 
     $data = $this->session2DB->read($this->session_id);
-    $_SESSION = unserialize($data, array());
+    $_SESSION = unserialize($data, []);
 
     self::assertNull($_SESSION['null']);
   }
@@ -81,13 +75,13 @@ class SimpleSessionNotStartedTest extends \PHPUnit\Framework\TestCase
   public function testBasic3WithDbCheck()
   {
     $data = $this->session2DB->read($this->session_id);
-    $_SESSION = unserialize($data, array());
+    $_SESSION = unserialize($data, []);
 
     self::assertSame(123, $_SESSION['test']);
 
-    $result = $this->db->getDb()->select('session_data', array('hash' => $this->session2DB->get_fingerprint()));
+    $result = $this->db->getDb()->select('session_data', ['hash' => $this->session2DB->get_fingerprint()]);
     $data = $result->fetchArray();
-    $sessionDataFromDb = unserialize($data['session_data'], array());
+    $sessionDataFromDb = unserialize($data['session_data'], []);
     self::assertSame(123, $sessionDataFromDb['test']);
   }
 
@@ -103,6 +97,12 @@ class SimpleSessionNotStartedTest extends \PHPUnit\Framework\TestCase
     self::assertSame(1, $sessionsCount1);
     self::assertSame(0, $sessionsCount2);
     self::assertCount(2, $_SESSION);
+    self::assertSame(
+        [
+            'test' => 123,
+            'null' => null,
+        ], $_SESSION
+    );
   }
 
   public function setUp()
