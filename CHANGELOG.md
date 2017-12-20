@@ -31,6 +31,9 @@
 * drop support for PHP < 7.0
 * use "strict_types"
 
+# Changelog 2.0.0 (2017-12-20)
+
+* backport changes from the "master"-branch into "php_old"-branch
 
 # Changelog 2.0.0 (2017-10-15)
 
