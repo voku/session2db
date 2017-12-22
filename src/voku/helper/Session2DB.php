@@ -33,7 +33,7 @@ namespace voku\helper;
  * @license http://www.gnu.org/licenses/lgpl-3.0.txt GNU LESSER GENERAL PUBLIC LICENSE
  * @package voku\helper
  */
-class Session2DB /* implements \SessionHandlerInterface // (PHP 5 >= 5.4.0)  */
+class Session2DB implements \SessionHandlerInterface
 {
   /**
    * the name for the session variable that will be created upon script execution
