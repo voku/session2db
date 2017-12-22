@@ -96,13 +96,6 @@ class SimpleSessionNotStartedTest extends \PHPUnit\Framework\TestCase
 
     self::assertSame(1, $sessionsCount1);
     self::assertSame(0, $sessionsCount2);
-    self::assertCount(2, $_SESSION);
-    self::assertSame(
-        [
-            'test' => 123,
-            'null' => null,
-        ], $_SESSION
-    );
   }
 
   public function setUp()

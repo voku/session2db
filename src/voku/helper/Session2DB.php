@@ -963,44 +963,8 @@ class Session2DB implements \SessionHandlerInterface
       \trigger_error('Cannot change save handler when headers already sent', E_USER_WARNING);
     }
 
-    if (Bootup::is_php('5.4')) {
-      /** @noinspection PhpUsageOfSilenceOperatorInspection */
-      return @\session_set_save_handler($this, true);
-    }
-
     /** @noinspection PhpUsageOfSilenceOperatorInspection */
-    $results = @\session_set_save_handler(
-        [
-            &$this,
-            'open',
-        ],
-        [
-            &$this,
-            'close',
-        ],
-        [
-            &$this,
-            'read',
-        ],
-        [
-            &$this,
-            'write',
-        ],
-        [
-            &$this,
-            'destroy',
-        ],
-        [
-            &$this,
-            'gc',
-        ]
-    );
-
-    if (!$results) {
-      return false;
-    }
-
-    return true;
+    return @\session_set_save_handler($this, true);
   }
 
   /**
