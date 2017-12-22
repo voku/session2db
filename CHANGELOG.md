@@ -1,3 +1,7 @@
+# Changelog 2.1.2 (2017-12-20)
+
+* try to use "SessionHandlerInterface" v2
+
 # Changelog 2.1.1 (2017-12-20)
 
 * try to use "SessionHandlerInterface"
