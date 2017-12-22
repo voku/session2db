@@ -406,8 +406,7 @@ class Session2DB implements \SessionHandlerInterface
       WHERE lock_hash = '" . $this->db->escape($look_name) . "'
       LIMIT 1
     ";
-    $db_result = $this->db->query($query_lock);
-    $old_lock_timeout = $db_result->fetchColumn('lock_time');
+    $old_lock_timeout = $this->db->fetchColumn($query_lock, 'lock_time');
 
     if (!$old_lock_timeout) {
       $query_lock = '
