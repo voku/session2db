@@ -1,3 +1,11 @@
+# Chanelog 4.0.0 (2017-12-23)
+
+* update "Portable UTF8" from v4 -> v5
+  
+  -> this is a breaking change without API-changes - but the requirement from 
+     "Portable UTF8" has been changed (it no longer requires all polyfills from Symfony)
+
+
 # Chanelog 3.3.0 (2017-12-20)
 
 * use more php7 type-hints
