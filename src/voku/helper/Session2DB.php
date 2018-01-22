@@ -779,26 +779,47 @@ class Session2DB implements \SessionHandlerInterface
     }
 
     $hash = $this->get_fingerprint();
+    $expire_time = \time() + (int)$this->session_lifetime;
 
-    $query = 'INSERT INTO
-      ' . $this->table_name . "
-      (
-        session_id,
-        hash,
-        session_data,
-        session_expire
-      )
-      VALUES
-      (
-        '" . $this->db->escape($session_id) . "',
-        '" . $this->db->escape($hash) . "',
-        '" . $this->db->escape($session_data) . "',
-        '" . $this->db->escape((\time() + (int)$this->session_lifetime)) . "'
-      )
-      ON DUPLICATE KEY UPDATE
-        session_data = '" . $this->db->escape($session_data) . "',
-        session_expire = '" . $this->db->escape((\time() + (int)$this->session_lifetime)) . "'
+    $query_select = 'SELECT session_id FROM ' . $this->table_name . "
+      WHERE session_id = '" . $this->db->escape($session_id) . "'
+      LIMIT 0, 1
     ";
+    $result_select = $this->db->query($query_select);
+
+    if ($result_select->num_rows) {
+
+      $query = 'UPDATE ' . $this->table_name . "
+        SET 
+          hash = '" . $this->db->escape($hash) . "',
+          session_data = '" . $this->db->escape($session_data) . "',
+          session_expire = '" . $this->db->escape($expire_time) . "'
+        WHERE session_id = '" . $this->db->escape($session_id) . "';
+      ";
+
+    } else {
+
+      $query = 'INSERT INTO
+        ' . $this->table_name . "
+        (
+          session_id,
+          hash,
+          session_data,
+          session_expire
+        )
+        VALUES
+        (
+          '" . $this->db->escape($session_id) . "',
+          '" . $this->db->escape($hash) . "',
+          '" . $this->db->escape($session_data) . "',
+          '" . $this->db->escape($expire_time) . "'
+        )
+        ON DUPLICATE KEY UPDATE
+          session_data = '" . $this->db->escape($session_data) . "',
+          session_expire = '" . $this->db->escape($expire_time) . "'
+      ";
+
+    }
 
     // insert OR update session's data
     $result = $this->db->query($query);
