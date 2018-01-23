@@ -404,20 +404,30 @@ class Session2DB implements \SessionHandlerInterface
     $result_lock = false;
 
     $query_lock = '
-    SELECT * FROM ' . $this->table_name_lock . " 
+    SELECT lock_time FROM ' . $this->table_name_lock . " 
       WHERE lock_hash = '" . $this->db->escape($look_name) . "'
-      LIMIT 1
+      LIMIT 0, 1
     ";
-    $db_result = $this->db->query($query_lock);
-    $old_lock_timeout = $db_result->fetchColumn('lock_time');
+    $old_lock_timeout = $this->db->fetchColumn($query_lock, 'lock_time');
 
     if (!$old_lock_timeout) {
+
       $query_lock = '
-      INSERT INTO ' . $this->table_name_lock . " 
-        SET 
-          lock_hash = '" . $this->db->escape($look_name) . "',
-          lock_time = '" . $this->db->escape($lock_time) . "'
+      INSERT INTO 
+      ' . $this->table_name_lock . "
+      (
+        lock_hash,
+        lock_time
+      )
+      VALUES
+      (
+        '" . $this->db->escape($look_name) . "',
+        '" . $this->db->escape($lock_time) . "'
+      )
+      ON DUPLICATE KEY UPDATE
+        lock_time = '" . $this->db->escape($lock_time) . "'
       ";
+
       if ($this->db->query($query_lock) !== false) {
         $result_lock = true;
       }
@@ -784,45 +794,25 @@ class Session2DB implements \SessionHandlerInterface
     $hash = $this->get_fingerprint();
     $expire_time = \time() + (int)$this->session_lifetime;
 
-    $query_select = 'SELECT session_id FROM ' . $this->table_name . "
-      WHERE session_id = '" . $this->db->escape($session_id) . "'
-      LIMIT 0, 1
+    $query = 'INSERT INTO
+    ' . $this->table_name . "
+    (
+      session_id,
+      hash,
+      session_data,
+      session_expire
+    )
+    VALUES
+    (
+      '" . $this->db->escape($session_id) . "',
+      '" . $this->db->escape($hash) . "',
+      '" . $this->db->escape($session_data) . "',
+      '" . $this->db->escape($expire_time) . "'
+    )
+    ON DUPLICATE KEY UPDATE
+      session_data = '" . $this->db->escape($session_data) . "',
+      session_expire = '" . $this->db->escape($expire_time) . "'
     ";
-    $result_select = $this->db->query($query_select);
-
-    if ($result_select->num_rows) {
-
-      $query = 'UPDATE ' . $this->table_name . "
-        SET 
-          hash = '" . $this->db->escape($hash) . "',
-          session_data = '" . $this->db->escape($session_data) . "',
-          session_expire = '" . $this->db->escape($expire_time) . "'
-        WHERE session_id = '" . $this->db->escape($session_id) . "';
-      ";
-
-    } else {
-
-      $query = 'INSERT INTO
-        ' . $this->table_name . "
-        (
-          session_id,
-          hash,
-          session_data,
-          session_expire
-        )
-        VALUES
-        (
-          '" . $this->db->escape($session_id) . "',
-          '" . $this->db->escape($hash) . "',
-          '" . $this->db->escape($session_data) . "',
-          '" . $this->db->escape($expire_time) . "'
-        )
-        ON DUPLICATE KEY UPDATE
-          session_data = '" . $this->db->escape($session_data) . "',
-          session_expire = '" . $this->db->escape($expire_time) . "'
-      ";
-
-    }
 
     // insert OR update session's data
     $result = $this->db->query($query);
