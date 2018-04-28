@@ -1,3 +1,10 @@
+# Changelog 4.0.1 (2018-04-29)
+
+* fix "integrity constraint violation" 
+
+  -> via "ON DUPLICATE KEY UPDATE" in the sql-query
+
+
 # Chanelog 4.0.0 (2017-12-23)
 
 * update "Portable UTF8" from v4 -> v5
