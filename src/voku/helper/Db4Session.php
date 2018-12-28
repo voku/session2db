@@ -6,48 +6,47 @@ namespace voku\helper;
 
 interface Db4Session
 {
+    /**
+     * @return bool
+     */
+    public function close(): bool;
 
-  /**
-   * @return bool
-   */
-  public function close(): bool;
+    /**
+     * @param mixed $var
+     *
+     * @return mixed
+     */
+    public function escape($var);
 
-  /**
-   * @param mixed $var
-   *
-   * @return mixed
-   */
-  public function escape($var);
+    /**
+     * @param string $sql
+     * @param string $string
+     *
+     * @return array|string <p>empty string on error</p>
+     */
+    public function fetchColumn(string $sql, string $string);
 
-  /**
-   * @param string $sql
-   * @param string $string
-   *
-   * @return array|string <p>empty string on error</p>
-   */
-  public function fetchColumn(string $sql, string $string);
+    /**
+     * @return bool
+     */
+    public function ping(): bool;
 
-  /**
-   * @return bool
-   */
-  public function ping(): bool;
+    /**
+     * @param string $sql
+     *
+     * @return false|mixed <p>false on error</p>
+     */
+    public function query(string $sql);
 
-  /**
-   * @param string $sql
-   *
-   * @return mixed|false <p>false on error</p>
-   */
-  public function query(string $sql);
+    /**
+     * @param string $string
+     *
+     * @return string
+     */
+    public function quote_string(string $string): string;
 
-  /**
-   * @param string $string
-   *
-   * @return string
-   */
-  public function quote_string(string $string): string;
-
-  /**
-   * @return bool
-   */
-  public function reconnect(): bool;
+    /**
+     * @return bool
+     */
+    public function reconnect(): bool;
 }
