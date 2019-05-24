@@ -4,8 +4,10 @@
 [![Latest Stable Version](https://poser.pugx.org/voku/session2db/v/stable)](https://packagist.org/packages/voku/session2db) 
 [![Total Downloads](https://poser.pugx.org/voku/session2db/downloads)](https://packagist.org/packages/voku/session2db) 
 [![License](https://poser.pugx.org/voku/session2db/license)](https://packagist.org/packages/voku/session2db)
+[![Donate to this project using Paypal](https://img.shields.io/badge/paypal-donate-yellow.svg)](https://www.paypal.me/moelleken)
+[![Donate to this project using Patreon](https://img.shields.io/badge/patreon-donate-yellow.svg)](https://www.patreon.com/voku)
 
-## :crown: Session2DB
+# :crown: Session2DB
 
 #### A drop-in replacement for PHP's default session handler which stores session data in a database, providing both better performance and better security and protection against session fixation and session hijacking.
 
@@ -19,17 +21,17 @@ Session2DB is was inspired by John Herren's code from the [Trick out your sessio
 
 The code is heavily commented and generates no warnings/errors/notices when PHP's error reporting level is set to E_ALL.
 
-## Requirements
+### Requirements
 
 PHP 7.x with the **mysqli extension** activated, MySQL 5.x+ (recommanded: **mysqlnd extension**)
 
-## How to install
+### How to install
 
 ```shell
 composer require voku/session2db
 ```
 
-## How to use
+### How to use
 
 After installing, you will need to initialise the database table from the *install* directory from this repo, it will containing a file named *session_data.sql*. This file contains the SQL code that will create a table that is used by the class to store session data. Import or execute the SQL code using your preferred MySQL manager (like phpMyAdmin or the fantastic Adminer) into a database of your choice.
 
@@ -103,3 +105,19 @@ After installing, you will need to initialise the database table from the *insta
 
     // data is in the database!
 ```
+
+### Support
+
+For support and donations please visit [Github](https://github.com/voku/session2db/) | [Issues](https://github.com/voku/session2db/issues) | [PayPal](https://paypal.me/moelleken) | [Patreon](https://www.patreon.com/voku).
+
+For status updates and release announcements please visit [Releases](https://github.com/voku/session2db/releases) | [Twitter](https://twitter.com/suckup_de) | [Patreon](https://www.patreon.com/voku/posts).
+
+For professional support please contact [me](https://about.me/voku).
+
+### Thanks
+
+- Thanks to [GitHub](https://github.com) (Microsoft) for hosting the code and a good infrastructure including Issues-Managment, etc.
+- Thanks to [IntelliJ](https://www.jetbrains.com) as they make the best IDEs for PHP and they gave me an open source license for PhpStorm!
+- Thanks to [Travis CI](https://travis-ci.com/) for being the most awesome, easiest continous integration tool out there!
+- Thanks to [StyleCI](https://styleci.io/) for the simple but powerfull code style check.
+- Thanks to [PHPStan](https://github.com/phpstan/phpstan) && [Psalm](https://github.com/vimeo/psalm) for relly great Static analysis tools and for discover bugs in the code!
