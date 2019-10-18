@@ -1,7 +1,9 @@
 
 language: php
 
-sudo: false
+# Temporarily use legacy infrastructure until Travis resolves MySQL issues with their containerized infrastructure.
+# @see https://github.com/travis-ci/travis-ci/issues/6842
+sudo: required
 
 git:
   depth: 2
@@ -12,14 +14,26 @@ cache:
 
 matrix:
   fast_finish: true
-  allow_failures:
-    - php: nightly
   include:
     - php: 7.0
+      env: DB=mariadb
+      addons:
+        mariadb: 10.2
     - php: 7.1
+      env: DB=mariadb
+      addons:
+        mariadb: 10.2
     - php: 7.2
+      env: DB=mariadb
+      addons:
+        mariadb: 10.3
     - php: 7.3
-    - php: nightly
+      env: DB=mariadb
+      addons:
+        mariadb: 10.3
+
+services:
+  - mysql
 
 before_script:
   - php --version
