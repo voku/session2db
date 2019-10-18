@@ -1043,6 +1043,16 @@ class Session2DB implements \SessionHandlerInterface
             // INFO: The possible values are '4' (0-9, a-f), '5' (0-9, a-v), and '6' (0-9, a-z, A-Z, "-", ",").
             /** @noinspection PhpUsageOfSilenceOperatorInspection */
             @\ini_set('session.hash_bits_per_character', '6');
+        } else {
+            // Use longer session id length.
+            /** @noinspection PhpUsageOfSilenceOperatorInspection */
+            @\ini_set('session.sid_length', '42');
+
+            // Increase character-range of the session ID to help prevent brute-force attacks.
+            //
+            // INFO: The possible values are '4' (0-9, a-f), '5' (0-9, a-v), and '6' (0-9, a-z, A-Z, "-", ",").
+            /** @noinspection PhpUsageOfSilenceOperatorInspection */
+            @\ini_set('session.sid_bits_per_character', '6');
         }
 
         // make sure session cookies never expire so that session lifetime
