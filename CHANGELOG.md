@@ -1,3 +1,8 @@
+# Changelog 4.0.3 (2019-10-18)
+
+* use more secure session settings
+
+
 # Changelog 4.0.2 (2018-12-29)
 
 * update "Simple-MySQL"-dependency use v7 or v8
