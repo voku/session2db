@@ -51,6 +51,7 @@ class DbWrapper4Session implements Db4Session
     public function fetchColumn(string $sql, string $string)
     {
         $result = $this->db->query($sql);
+        \assert($result instanceof \voku\db\Result);
 
         return $result->fetchColumn($string);
     }

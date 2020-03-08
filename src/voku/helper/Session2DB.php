@@ -53,7 +53,7 @@ class Session2DB implements \SessionHandlerInterface
      */
     private $flashdata = [];
 
-    /*
+    /**
      * @var int
      */
     private $session_lifetime;
@@ -469,8 +469,8 @@ class Session2DB implements \SessionHandlerInterface
                 $result_lock = \fwrite($fp, $lock_time);
                 \fflush($fp);
                 \flock($fp, \LOCK_UN);
+                \fclose($fp);
             }
-            \fclose($fp);
         }
 
         return [$old_lock_timeout, $result_lock];
@@ -490,6 +490,8 @@ class Session2DB implements \SessionHandlerInterface
 
     /**
      * Manages flashdata behind the scenes.
+     *
+     * @return void
      */
     public function _manage_flashdata()
     {
@@ -620,7 +622,7 @@ class Session2DB implements \SessionHandlerInterface
     /**
      * Custom destroy() function.
      *
-     * @param int $session_id
+     * @param string $session_id
      *
      * @return bool
      */
@@ -649,9 +651,9 @@ class Session2DB implements \SessionHandlerInterface
      *
      * @param int $maxlifetime <p>INFO: must be set for the interface.</P>
      *
-     * @return int
+     * @return bool
      */
-    public function gc($maxlifetime): int
+    public function gc($maxlifetime): bool
     {
         // deletes expired locks from database
         if ($this->lock_via_mysql === null) {
@@ -667,7 +669,9 @@ class Session2DB implements \SessionHandlerInterface
             WHERE session_expire < '" . $this->db->escape(\time()) . "'
         ";
 
-        return (int) $this->db->query($query);
+        $this->db->query($query);
+
+        return true;
     }
 
     /**
@@ -698,7 +702,7 @@ class Session2DB implements \SessionHandlerInterface
     /**
      * Custom read() function.
      *
-     * @param $session_id
+     * @param string $session_id
      *
      * @return string
      */
@@ -727,6 +731,7 @@ class Session2DB implements \SessionHandlerInterface
         LIMIT 1
         ";
 
+        /** @var string $data */
         $data = $this->db->fetchColumn($query, 'session_data');
 
         // if anything was found
@@ -795,6 +800,9 @@ class Session2DB implements \SessionHandlerInterface
         return $result !== false;
     }
 
+    /**
+     * @return void
+     */
     private function generate_fingerprint()
     {
         //  reads session data associated with a session id, but only if
@@ -840,7 +848,8 @@ class Session2DB implements \SessionHandlerInterface
      * $active_sessions = $session->get_active_sessions();
      * </code>
      *
-     * @return int <p>Returns the number of active (not expired) sessions.</p>
+     * @return int
+     *             <p>Returns the number of active (not expired) sessions.</p>
      */
     public function get_active_sessions(): int
     {
@@ -852,7 +861,10 @@ class Session2DB implements \SessionHandlerInterface
         ';
 
         // counts the rows from the database
-        return (int) $this->db->fetchColumn($query, 'count');
+        /** @var int|string $count */
+        $count = $this->db->fetchColumn($query, 'count');
+
+        return (int) $count;
     }
 
     /**
@@ -889,7 +901,8 @@ class Session2DB implements \SessionHandlerInterface
      * //  )
      * </code>
      *
-     * @return string[] <p>
+     * @return string[]
+     *                  <p>
      *                  Returns the values of <i>session.gc_maxlifetime</i>, <i>session.gc_probability</i> and
      *                  <i>session.gc_divisor</i> as an associative array.
      *                  </p>
@@ -903,10 +916,10 @@ class Session2DB implements \SessionHandlerInterface
 
         // return them as an array
         return [
-            'session.gc_maxlifetime' => $gc_maxlifetime . ' seconds (' . \round($gc_maxlifetime / 60) . ' minutes)',
-            'session.gc_probability' => $gc_probability,
-            'session.gc_divisor'     => $gc_divisor,
-            'probability'            => $gc_probability / $gc_divisor * 100 . '%',
+            'session.gc_maxlifetime' => (string)$gc_maxlifetime . ' seconds (' . \round($gc_maxlifetime / 60) . ' minutes)',
+            'session.gc_probability' => (string)$gc_probability,
+            'session.gc_divisor'     => (string)$gc_divisor,
+            'probability'            => (string)($gc_probability / $gc_divisor * 100) . '%',
         ];
     }
 
@@ -927,6 +940,8 @@ class Session2DB implements \SessionHandlerInterface
      * // regenerate the session's ID
      * $session->regenerate_id();
      * </code>
+     *
+     * @return void
      */
     public function regenerate_id()
     {
@@ -1062,7 +1077,7 @@ class Session2DB implements \SessionHandlerInterface
 
         /** @noinspection PhpUsageOfSilenceOperatorInspection */
         @\ini_set('session.gc_maxlifetime', (string) $session_lifetime);
-        $this->session_lifetime = \ini_get('session.gc_maxlifetime');
+        $this->session_lifetime = (int)\ini_get('session.gc_maxlifetime');
 
         /** @noinspection PhpUsageOfSilenceOperatorInspection */
         @\ini_set('session.gc_probability', (string) $gc_probability);
@@ -1237,6 +1252,8 @@ class Session2DB implements \SessionHandlerInterface
      * // end current session
      * $session->stop();
      * </code>
+     *
+     * @return void
      */
     public function stop()
     {
