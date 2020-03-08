@@ -1,3 +1,10 @@
+# Changelog 4.0.4 (2020-03-08)
+
+* fix typo in the "security-key-fallback" code | thanks @svgaman
+* fix typo in php settings
+* fix reported problems from phpstan
+
+
 # Changelog 4.0.3 (2019-10-18)
 
 * use more secure session settings
