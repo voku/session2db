@@ -34,7 +34,7 @@ matrix:
     - php: 7.4
       env: DB=mariadb
       addons:
-        mariadb: 10.4
+        mariadb: 10.3
 
 services:
   - mysql
