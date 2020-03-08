@@ -390,8 +390,8 @@ class Session2DB implements \SessionHandlerInterface
         $result_lock = false;
 
         $query_lock = '
-        SELECT lock_time 
-        FROM ' . $this->table_name_lock . " 
+        SELECT lock_time
+        FROM ' . $this->table_name_lock . "
         WHERE lock_hash = '" . $this->db->escape($look_name) . "'
         LIMIT 0, 1
         ";
@@ -399,7 +399,7 @@ class Session2DB implements \SessionHandlerInterface
 
         if (!$old_lock_timeout) {
             $query_lock = '
-            INSERT INTO 
+            INSERT INTO
             ' . $this->table_name_lock . "
             (
                 lock_hash,
@@ -1135,7 +1135,11 @@ class Session2DB implements \SessionHandlerInterface
     public function set_security_code(string $security_code): self
     {
         // fallback for the security-code
-        if (!$security_code || $security_code = '###set_the_security_key###') {
+        if (
+            $security_code === ''
+            ||
+            $security_code === '###set_the_security_key###'
+        ) {
             $security_code = 'sEcUrmenadwork_))';
         }
 

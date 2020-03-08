@@ -156,17 +156,17 @@ final class SimpleSessionLockViaMySqlTest extends \PHPUnit\Framework\TestCase
         $_SESSION = [];
 
         $this->session2DB = new Session2DB(
-        'teste21321_!!',
-        3600,
-        true,
-        false,
-        1,
-        1000,
-        'session_data',
-        60,
-        $this->db,
-        false
-    );
+            'teste21321_!!',
+            3600,
+            true,
+            false,
+            1,
+            1000,
+            'session_data',
+            60,
+            $this->db,
+            false
+        );
 
         $this->session2DB->start();
     }
