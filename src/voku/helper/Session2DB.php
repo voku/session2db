@@ -1029,7 +1029,7 @@ class Session2DB implements \SessionHandlerInterface
 
         // Make sure that PHP only uses cookies for sessions and disallow session ID passing as a GET parameter,
         /** @noinspection PhpUsageOfSilenceOperatorInspection */
-        @\ini_set('session.session.use_only_cookies', '1');
+        @\ini_set('session.use_only_cookies', '1');
 
         // PHP 7.1 Incompatible Changes
         // -> http://php.net/manual/en/migration71.incompatible.php
