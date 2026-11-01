@@ -55,8 +55,8 @@ final class SimpleSessionLockViaMySqlTest extends \PHPUnit\Framework\TestCase
 
         static::assertSame('1', $settings['session.gc_probability']);
         static::assertSame('1000', $settings['session.gc_divisor']);
-        static::assertContains('0.1', $settings['probability']);
-        static::assertContains('%', $settings['probability']);
+        static::assertStringContainsString('0.1', $settings['probability']);
+        static::assertStringContainsString('%', $settings['probability']);
     }
 
     /**
@@ -156,7 +156,7 @@ final class SimpleSessionLockViaMySqlTest extends \PHPUnit\Framework\TestCase
         static::assertTrue($result);
     }
 
-    protected function setUp()
+    protected function setUp(): void
     {
         $_SESSION = [];
 
