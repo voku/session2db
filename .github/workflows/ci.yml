@@ -44,6 +44,8 @@ jobs:
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
         with:
           php-version: '7.4'
+          # The legacy suite asserts these PHP session INI settings.
+          ini-values: session.gc_probability=1, session.gc_divisor=1000, session.gc_maxlifetime=3600
           extensions: mysqli
           coverage: none
           tools: composer:v2
