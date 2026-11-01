@@ -131,7 +131,7 @@ final class SimpleSessionLockViaPhpTest extends \PHPUnit\Framework\TestCase
         static::assertTrue($result);
     }
 
-    protected function setUp()
+    protected function setUp(): void
     {
         $_SESSION = [];
 
