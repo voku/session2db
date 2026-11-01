@@ -133,6 +133,10 @@ final class SimpleSessionLockViaExtraTableTest extends \PHPUnit\Framework\TestCa
 
     /**
      * @before
+     *
+     * The session superglobal is the behavior under test; each test needs a clean state.
+     *
+     * @SuppressWarnings(PHPMD.Superglobals)
      */
     public function initializeSessionFixture()
     {
