@@ -1,0 +1,62 @@
+name: PHPUnit + MySQL
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mysql-integration:
+    name: PHP 7.4 / MySQL
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: '7.4'
+          extensions: mysqli
+          coverage: none
+          tools: composer:v2
+
+      # Legacy tests connect through the localhost Unix socket as root with no password.
+      # Configure only this disposable runner; do not expose this database externally.
+      - name: Initialize local MySQL test database
+        run: |
+          sudo systemctl start mysql.service
+          sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '';"
+          mysql --protocol=socket -u root <<'SQL'
+          CREATE DATABASE mysql_test;
+          USE mysql_test;
+          CREATE TABLE session_data (
+            session_id varchar(128) NOT NULL default '',
+            hash varchar(128) NOT NULL default '',
+            session_data blob NOT NULL,
+            session_expire int(11) NOT NULL default '0',
+            PRIMARY KEY (session_id),
+            KEY hash (hash),
+            KEY session_expire (session_expire),
+            KEY select_helper_index (session_id, hash, session_expire)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC;
+          CREATE TABLE lock_data (
+            lock_hash varchar(128) NOT NULL,
+            lock_time int(11) UNSIGNED NOT NULL,
+            PRIMARY KEY (lock_hash),
+            KEY lock_time (lock_time)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC;
+          SQL
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Run database integration tests
+        run: ./vendor/bin/phpunit -c phpunit.xml
