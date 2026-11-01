@@ -34,7 +34,7 @@ final class SimpleSessionLockViaMySqlTest extends \PHPUnit\Framework\TestCase
     {
         parent::__construct();
 
-        $db = DB::getInstance('localhost', 'root', '', 'mysql_test');
+        $db = DB::getInstance('localhost', \getenv('TEST_DB_USER') ?: 'root', '', 'mysql_test');
         $this->db = new DbWrapper4Session($db);
     }
 
