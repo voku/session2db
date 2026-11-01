@@ -14,6 +14,8 @@ jobs:
     name: PHP 7.4 / MySQL
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    env:
+      TEST_DB_USER: runner
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -28,14 +30,15 @@ jobs:
           coverage: none
           tools: composer:v2
 
-      # Legacy tests connect through the localhost Unix socket as root with no password.
-      # Configure only this disposable runner; do not expose this database externally.
+      # The unprivileged runner connects through MySQL's local auth_socket plugin.
+      # Only the disposable test database is writable; no network credentials required.
       - name: Initialize local MySQL test database
         run: |
           sudo systemctl start mysql.service
-          sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '';"
-          mysql --protocol=socket -u root <<'SQL'
+          sudo mysql <<'SQL'
+          CREATE USER 'runner'@'localhost' IDENTIFIED WITH auth_socket;
           CREATE DATABASE mysql_test;
+          GRANT ALL PRIVILEGES ON mysql_test.* TO 'runner'@'localhost';
           USE mysql_test;
           CREATE TABLE session_data (
             session_id varchar(128) NOT NULL default '',
