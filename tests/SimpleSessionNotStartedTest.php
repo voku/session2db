@@ -104,7 +104,10 @@ final class SimpleSessionNotStartedTest extends \PHPUnit\Framework\TestCase
         static::assertSame(0, $sessionsCount2);
     }
 
-    protected function setUp(): void
+    /**
+     * @before
+     */
+    public function initializeSessionFixture()
     {
         $this->session2DB = new Session2DB(
             'teste21321_!!',
