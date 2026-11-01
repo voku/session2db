@@ -11,11 +11,29 @@ permissions:
 
 jobs:
   mysql-integration:
-    name: PHP 7.4 / MySQL
+    name: PHP 7.4 / MySQL 8.0
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ci-only-root
+          MYSQL_DATABASE: mysql_test
+          MYSQL_USER: ci_test
+          MYSQL_PASSWORD: ci-only-user
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysql -h 127.0.0.1 -u ci_test -pci-only-user -e 'SELECT 1'"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
     env:
-      TEST_DB_USER: runner
+      TEST_DB_HOST: 127.0.0.1
+      TEST_DB_USER: ci_test
+      TEST_DB_PASSWORD: ci-only-user
+      MYSQL_PWD: ci-only-user
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -30,16 +48,11 @@ jobs:
           coverage: none
           tools: composer:v2
 
-      # The unprivileged runner connects through MySQL's local auth_socket plugin.
-      # Only the disposable test database is writable; no network credentials required.
-      - name: Initialize local MySQL test database
+      # This disposable service is reachable only through the runner's forwarded port.
+      # Test credentials are intentionally non-secret and have only mysql_test privileges.
+      - name: Initialize test schema
         run: |
-          sudo systemctl start mysql.service
-          sudo mysql <<'SQL'
-          CREATE USER 'runner'@'localhost' IDENTIFIED WITH auth_socket;
-          CREATE DATABASE mysql_test;
-          GRANT ALL PRIVILEGES ON mysql_test.* TO 'runner'@'localhost';
-          USE mysql_test;
+          mysql -h 127.0.0.1 -u ci_test mysql_test <<'SQL'
           CREATE TABLE session_data (
             session_id varchar(128) NOT NULL default '',
             hash varchar(128) NOT NULL default '',
