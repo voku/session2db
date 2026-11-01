@@ -131,7 +131,10 @@ final class SimpleSessionLockViaExtraTableTest extends \PHPUnit\Framework\TestCa
         static::assertTrue($result);
     }
 
-    protected function setUp(): void
+    /**
+     * @before
+     */
+    public function initializeSessionFixture()
     {
         $_SESSION = [];
 
