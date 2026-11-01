@@ -100,4 +100,7 @@ jobs:
       # Source and tests must remain parseable on the declared legacy runtimes.
       # Do not install the security-advisory-blocked PHPUnit 6/7 toolchain.
       - name: Lint source and tests
-        run: find src tests -type f -name '*.php' -print0 | xargs -0 -r -n 1 php -l
+        shell: bash
+        run: |
+          set -euo pipefail
+          find src tests -type f -name '*.php' -print0 | xargs -0 -r -n 1 php -l
