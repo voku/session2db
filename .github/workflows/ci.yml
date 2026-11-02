@@ -1,0 +1,106 @@
+name: PHPUnit + MySQL
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mysql-integration:
+    name: PHP 7.4 / MySQL 8.0
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:8.0@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b # 8.0.46 observed in green CI
+        env:
+          MYSQL_RANDOM_ROOT_PASSWORD: 'yes'
+          MYSQL_DATABASE: mysql_test
+          MYSQL_USER: ci_test
+          MYSQL_PASSWORD: ci-only-user
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysql -h 127.0.0.1 -u ci_test -pci-only-user -e 'SELECT 1'"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      TEST_DB_HOST: 127.0.0.1
+      TEST_DB_USER: ci_test
+      TEST_DB_PASSWORD: ci-only-user
+      MYSQL_PWD: ci-only-user
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: '7.4'
+          # The legacy suite asserts these PHP session INI settings.
+          ini-values: session.gc_probability=1, session.gc_divisor=1000
+          extensions: mysqli
+          coverage: none
+          tools: composer:v2
+
+      # This disposable service is reachable only through the runner's forwarded port.
+      # Test credentials are intentionally non-secret and have only mysql_test privileges.
+      - name: Initialize test schema
+        run: |
+          mysql -h 127.0.0.1 -u ci_test mysql_test <<'SQL'
+          CREATE TABLE session_data (
+            session_id varchar(128) NOT NULL default '',
+            hash varchar(128) NOT NULL default '',
+            session_data blob NOT NULL,
+            session_expire int(11) NOT NULL default '0',
+            PRIMARY KEY (session_id),
+            KEY hash (hash),
+            KEY session_expire (session_expire),
+            KEY select_helper_index (session_id, hash, session_expire)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC;
+          CREATE TABLE lock_data (
+            lock_hash varchar(128) NOT NULL,
+            lock_time int(11) UNSIGNED NOT NULL,
+            PRIMARY KEY (lock_hash),
+            KEY lock_time (lock_time)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC;
+          SQL
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Run database integration tests
+        run: ./vendor/bin/phpunit -c phpunit.xml
+
+  legacy-syntax:
+    name: PHP ${{ matrix.php }} syntax
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['7.0', '7.1', '7.2']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+      - name: Set up PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      # Source and tests must remain parseable on the declared legacy runtimes.
+      # Do not install the security-advisory-blocked PHPUnit 6/7 toolchain.
+      - name: Lint source and tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          find src tests -type f -name '*.php' -print0 | xargs -0 -r -n 1 php -l

@@ -33,7 +33,12 @@ final class SimpleSessionLockViaPhpTest extends \PHPUnit\Framework\TestCase
     {
         parent::__construct();
 
-        $db = DB::getInstance('localhost', 'root', '', 'mysql_test');
+        $db = DB::getInstance(
+            \getenv('TEST_DB_HOST') ?: 'localhost',
+            \getenv('TEST_DB_USER') ?: 'root',
+            \getenv('TEST_DB_PASSWORD') ?: '',
+            'mysql_test'
+        );
         $this->db = new DbWrapper4Session($db);
     }
 
@@ -126,7 +131,14 @@ final class SimpleSessionLockViaPhpTest extends \PHPUnit\Framework\TestCase
         static::assertTrue($result);
     }
 
-    protected function setUp()
+    /**
+     * @before
+     *
+     * The session superglobal is the behavior under test; each test needs a clean state.
+     *
+     * @SuppressWarnings(PHPMD.Superglobals)
+     */
+    public function initializeSessionFixture()
     {
         $_SESSION = [];
 

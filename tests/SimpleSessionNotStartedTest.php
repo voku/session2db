@@ -33,7 +33,12 @@ final class SimpleSessionNotStartedTest extends \PHPUnit\Framework\TestCase
     {
         parent::__construct();
 
-        $db = DB::getInstance('localhost', 'root', '', 'mysql_test');
+        $db = DB::getInstance(
+            \getenv('TEST_DB_HOST') ?: 'localhost',
+            \getenv('TEST_DB_USER') ?: 'root',
+            \getenv('TEST_DB_PASSWORD') ?: '',
+            'mysql_test'
+        );
         $this->db = new DbWrapper4Session($db);
     }
 
@@ -99,7 +104,10 @@ final class SimpleSessionNotStartedTest extends \PHPUnit\Framework\TestCase
         static::assertSame(0, $sessionsCount2);
     }
 
-    protected function setUp()
+    /**
+     * @before
+     */
+    public function initializeSessionFixture()
     {
         $this->session2DB = new Session2DB(
             'teste21321_!!',
