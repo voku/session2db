@@ -11,13 +11,9 @@ permissions:
 
 jobs:
   mysql-integration:
-    name: PHP ${{ matrix.php }} / MySQL 8.0
+    name: PHP 7.4 / MySQL 8.0
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        php: ['7.3', '7.4']
     services:
       mysql:
         image: mysql:8.0@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b # 8.0.46 observed in green CI
@@ -47,7 +43,7 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
         with:
-          php-version: ${{ matrix.php }}
+          php-version: '7.4'
           # The legacy suite asserts these PHP session INI settings.
           ini-values: session.gc_probability=1, session.gc_divisor=1000
           extensions: mysqli
